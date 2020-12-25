@@ -1,9 +1,12 @@
 package DCEAPI
 
-type SwapAPI interface {
-
-}
-
 type SpotAPI interface {
-	
+	LimitBuyOrder()
+	LimitSellOrder()
+	MarketBuyOrder()
+	MarketSellOrder()
+	FetchTicker()
 }
+
+
+

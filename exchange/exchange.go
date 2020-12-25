@@ -1,30 +1,40 @@
 package exchange
 
 import (
-	"fmt"
 	"net/http"
-	_ "io/ioutil"
-	"net/url"
+	"strings"
+	"io/ioutil"
+	_ "net/url"
 )
 
-type exchange struct {
+type Exchange struct {
 	Name string
+	instance interface{}
 	Apikey string
 	Secert string
 	Password string
 	LimitRate bool
 }
 
-func BaseRequest(method string, path string, params url.Values) {
-	url, err := url.Parse(path)
-	if err != nil {
-		fmt.Println("invalid", url)
-	}
-	if method == "post" {
-		res, err := http.Post(urlPath)
+func BaseRequest(method string, path string) (interface{}, error) {
+	client := &http.Client{}
+	if method == "GET" {
+		fmt.Println("GET")
 	} else {
-		url.RawQuery = params.Encode()
-		urlPath := url.String()
-		res, err := http.Get(urlPath)
+		fmt.Println("POST")
 	}
+	req, err := http.NewRequest(method, path, strings.NewReader(""))
+	if err != nil {
+		return nil, err
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	body, err := ioutil.ReadAll(resp.Body)
+	defer resp.Body.Close()
+	if err != nil {
+		return nil, err
+	}
+	return string(body), nil
 }

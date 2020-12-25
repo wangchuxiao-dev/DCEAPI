@@ -1,12 +1,11 @@
 package main
 
 import (
-	_ "fmt"
 	"./exchange"
-	"net/url"
+	"fmt"
 )
 
 func main() {
-	params = url.Values{}
-	exchange.BaseRequest("GET", "www.huobipro.com", nil)
+	res, _ := exchange.BaseRequest("GET", "https://www.baidu.com")
+	fmt.Println(res)
 }
