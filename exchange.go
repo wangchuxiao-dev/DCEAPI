@@ -33,3 +33,7 @@ func BaseRequest(method string, path string, body string) (string, error) {
 	}
 	return string(resBody), nil
 }
+
+func RequestBuilder() {
+	
+}

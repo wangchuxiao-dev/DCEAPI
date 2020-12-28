@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	aofex := exchanges.NewAofex(false, "testsecret", "testapikey")
+	aofex := exchanges.NewAofex("testsecret", "testapikey")
 	s, err := aofex.FetchMarkets()
 	fmt.Println(err, s)
 	_, err2 := DCEAPI.BaseRequest("POST", "https://www.baidu.com", "")

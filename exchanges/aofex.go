@@ -1,12 +1,13 @@
 package exchanges
 
 import (
-	_ "crypto/sha1"
+	"crypto/sha1"
 	"github.com/PythonohtyP1900/DCEAPI"
 	_ "net/url"
-	"crypto/rand" //真随机
+	"crypto/rand" 
     "fmt"
-    "math/big"
+	"math/big"
+	"io"
 )
 
 const Path string = "https://aofex.com/"
@@ -15,7 +16,6 @@ const SpotPath string = "https://openapi.aofex.com/"
 const SwapPath string = "https://openapi-contract.aofex.com/"
 const DebugSpotPath string = ""
 const DebugSwapPath string = ""
-const nonceInt = "78"
 
 type Aofex struct {
 	Path string
@@ -24,25 +24,29 @@ type Aofex struct {
 	Exchange *DCEAPI.Exchange
 }
 
-func NewAofex(debug bool, secret, apikey string) *Aofex {
-	var spotPath string
-	var swapPath string
-	if debug == true {
-		spotPath = DebugSpotPath
-		swapPath = DebugSwapPath
-	} else {
-		spotPath = SpotPath
-		swapPath = SwapPath
-	}
+func NewAofex(secret, apikey string) *Aofex {
 	aofex := &Aofex{
 		Path: Path,
-		SpotPath: spotPath,
-		SwapPath: swapPath,
+		SpotPath: SpotPath,
+		SwapPath: SwapPath,
 		Exchange: &DCEAPI.Exchange{
 			Name: "AOFEX",
 			Secret: secret,
 			Apikey: apikey,
-			Debug: debug,
+		},
+	}
+	return aofex
+}
+
+func DebugNewAofex(secret, apikey string) *Aofex {
+	aofex := &Aofex{
+		Path: Path,
+		SpotPath: DebugSpotPath,
+		SwapPath: DebugSwapPath,
+		Exchange: &DCEAPI.Exchange{
+			Name: "AOFEX",
+			Secret: secret,
+			Apikey: apikey,
 		},
 	}
 	return aofex
@@ -51,7 +55,7 @@ func NewAofex(debug bool, secret, apikey string) *Aofex {
 func sign(apikey, secret string, data map[string]string) {
 	nonce, _ := rand.Int(rand.Reader, big.NewInt(100))
 	fmt.Println(nonce)
-	tmp := []string{apikey, secret, nonceInt}
+	tmp := []string{apikey, secret}
 	for k, v := range data {
 		tmp = append(tmp, k+"="+v)
 	}
@@ -82,6 +86,8 @@ func (aofex *Aofex) FetchTrades() (string, error) {
 }
 
 func (aofex *Aofex) LimitBuyOrder(symbol string, amount, price float64) {
+	data := map[string]interface{}{"symbol": symbol, "amount":amount, "price":price}
+
 	
 }
 
