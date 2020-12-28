@@ -6,6 +6,7 @@ import (
 )
 
 func main() {
-	res, _ := exchange.BaseRequest("GET", "https://www.baidu.com")
-	fmt.Println(res)
+	aofex := &exchange.Aofex{}
+	res, err := exchange.BaseRequest("POST", "https://www.baidu.cm", "")
+	fmt.Println(res, err)
 }

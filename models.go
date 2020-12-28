@@ -1,5 +1,14 @@
 package DCEAPI
 
+type balance struct {
+	BTC float64
+	ETH float64
+	EOS float64
+	LTC float64
+	SUSHI float64
+	USDT float64
+}
+
 type Symbol struct {
 	Symbol string
 	Base string
@@ -23,3 +32,4 @@ type Order struct {
 	TotalPrice float64
 	Timestamp int
 }
+

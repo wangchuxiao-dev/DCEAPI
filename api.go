@@ -6,7 +6,12 @@ type SpotAPI interface {
 	MarketBuyOrder()
 	MarketSellOrder()
 	FetchTicker()
+	FetchBalance()
 }
 
+type SwapAPI interface {
+	SwapLimitBuy()
+	SwapLimitSell()
+}
 
 
