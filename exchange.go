@@ -1,4 +1,4 @@
-package exchange
+package DCEAPI
 
 import (
 	"net/http"
@@ -9,9 +9,8 @@ import (
 
 type Exchange struct {
 	Name string
-	Instance interface{}
-	apikey string
-	secert string
+	Apikey string
+	Secret string
 	Password string
 	LimitRate bool
 	Debug bool
