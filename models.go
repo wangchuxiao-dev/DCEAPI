@@ -1,27 +1,26 @@
 package DCEAPI
 
-type balance struct {
-	BTC float64
-	ETH float64
-	EOS float64
-	LTC float64
-	SUSHI float64
-	USDT float64
+type Ticker struct {
+	Symbol string
+	Last float64      
+	Buy  float64      
+	Sell float64     
+	High float64      
+	Low  float64      
+	Vol  float64 
+	Date uint64      
+}
+
+type Balance struct {
+	Currency string
+	available float64
+	frozen float64
 }
 
 type Symbol struct {
 	Symbol string
 	Base string
 	Quoto string
-}
-
-type Ticker struct {
-	Open float64
-	Close float64
-	High float64
-	Low float64
-	Volume float64
-	Timestamp int
 }
 
 type Order struct {

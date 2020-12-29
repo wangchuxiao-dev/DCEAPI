@@ -16,9 +16,12 @@ type Exchange struct {
 	Debug bool
 }
 
-func BaseRequest(method string, path string, body string) (string, error) {
+func BaseRequest(method, path, body string, headers map[string]string) (string, error) {
 	client := &http.Client{}
 	req, err := http.NewRequest(method, path, strings.NewReader(body))
+	for k, v := range headers {
+		req.Header.Add(k, v)
+	}
 	if err != nil {
 		return "", err
 	}
