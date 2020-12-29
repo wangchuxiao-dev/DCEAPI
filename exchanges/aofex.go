@@ -3,20 +3,20 @@ package exchanges
 import (
 	"crypto/sha1"
 	_ "net/url"
-	"crypto/rand" 
+	_ "crypto/rand" 
 	"fmt"
 	"sort"
-	"math/big"
+	_ "math/big"
 	"io"
-
+	"time"
 	"github.com/PythonohtyP1900/DCEAPI"
 )
 
 const (
 	Path string = "https://aofex.com/"
 	CNPath string = "https://aofex.co/"
-	SpotPath string = "https://openapi.aofex.com/"
-	SwapPath string = "https://openapi-contract.aofex.com/"
+	SpotPath string = "https://openapi.aofex.co"
+	SwapPath string = "https://openapi-contract.aofex.co"
 	DebugSpotPath string = ""
 	DebugSwapPath string = ""
 )
@@ -67,6 +67,7 @@ func sign(apikey, secret, nonce string, data map[string]string) string {
 	for k, v := range data {
 		tmp = append(tmp, k+"="+v)
 	}
+	fmt.Println(tmp)
 	sort.Sort(tmp)
 	var hashString string
 	for _, v := range tmp {
@@ -78,12 +79,14 @@ func sign(apikey, secret, nonce string, data map[string]string) string {
 }
 
 func generateNonce() string {
-	nonce, _ := rand.Int(rand.Reader, big.NewInt(100))
-	return nonce.String()
+	nonce := int(time.Now().Unix())
+	
+	return nonce.String() + "_" + "sadx1"
 }
 
 func generateHeader(apikey, secret string, params map[string]string) map[string]string {
 	nonce := generateNonce()
+	fmt.Println(nonce)
 	return map[string]string{
 		"Nonce": nonce,
 		"Token": apikey,
@@ -101,8 +104,8 @@ func (aofex *Aofex) aofexRequestPrivate(method, path string, params map[string]s
 	return res_string, err
 }
 
-func (aofex *Aofex) FetchBalance() (string, error){
-	res_string, err := aofex.aofexRequestPrivate("GET", aofex.SpotPath+"/openApi/wallet/list", map[string]string{})
+func (aofex *Aofex) FetchBalance() (string, error) {
+	res_string, err := aofex.aofexRequestPrivate("GET", aofex.SpotPath+"/openApi/wallet/list?show_all=1", map[string]string{"show_all":"1"})
 	return res_string, err
 }
 
