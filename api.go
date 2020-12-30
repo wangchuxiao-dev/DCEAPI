@@ -1,7 +1,5 @@
 package DCEAPI
 
-
-
 type SpotAPI interface {
 	FetchBalance() (string, error)
 	FetchMarkets() (string, error)

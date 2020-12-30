@@ -1,11 +1,11 @@
 package main
 
-import ("fmt")
-
-func main()  {
-	var data []struct {
-		symbol string
-	}
+import (
+	"fmt"
 	
-	fmt.Println(data)
+)
+
+func main() {
+	a := map[string]string{"1":"2"}
+	fmt.Println(a)
 }

@@ -6,9 +6,10 @@ import (
 	_ "crypto/rand" 
 	"fmt"
 	"sort"
-	_ "math/big"
+	"strconv"
 	"io"
 	"time"
+
 	"github.com/PythonohtyP1900/DCEAPI"
 )
 
@@ -22,8 +23,8 @@ const (
 )
 
 type BaseResponse struct {
-	Errno int `json errno`
-	Errmsg string `json errmsg`
+	Errno int 
+	Errmsg string 
 	result interface{}
 }
 
@@ -67,7 +68,6 @@ func sign(apikey, secret, nonce string, data map[string]string) string {
 	for k, v := range data {
 		tmp = append(tmp, k+"="+v)
 	}
-	fmt.Println(tmp)
 	sort.Sort(tmp)
 	var hashString string
 	for _, v := range tmp {
@@ -79,14 +79,12 @@ func sign(apikey, secret, nonce string, data map[string]string) string {
 }
 
 func generateNonce() string {
-	nonce := int(time.Now().Unix())
-	
-	return nonce.String() + "_" + "sadx1"
+	ts := strconv.FormatInt(time.Now().Unix(),10)
+	return ts + "_" + "sadx1"
 }
 
 func generateHeader(apikey, secret string, params map[string]string) map[string]string {
 	nonce := generateNonce()
-	fmt.Println(nonce)
 	return map[string]string{
 		"Nonce": nonce,
 		"Token": apikey,
@@ -94,44 +92,106 @@ func generateHeader(apikey, secret string, params map[string]string) map[string]
 	}
 }
 
-func (aofex *Aofex) aofexRequestPublic(method, path string, params map[string]string) (string, error) {
-	return "1", nil
+func (aofex *Aofex) GetExchangeName() string {
+	return "AOFEX"
 }
 
-func (aofex *Aofex) aofexRequestPrivate(method, path string, params map[string]string) (string, error) {
+func (aofex *Aofex) RequestPublic(method, path string, params, body map[string]string) (string, error) {
+	res, err := DCEAPI.BaseRequest(method, path, params, map[string]string{}, map[string]string{})
+	return res, err
+}
+
+func (aofex *Aofex) RequestPrivate(method, path string, params, body map[string]string) (string, error) {
 	headers := generateHeader(aofex.Exchange.Apikey, aofex.Exchange.Secret, params)
-	res_string, err := DCEAPI.BaseRequest(method, path, "", headers)
-	return res_string, err
+	res, err := DCEAPI.BaseRequest(method, path, params, nil, headers)
+	return res, err
 }
 
 func (aofex *Aofex) FetchBalance() (string, error) {
-	res_string, err := aofex.aofexRequestPrivate("GET", aofex.SpotPath+"/openApi/wallet/list?show_all=1", map[string]string{"show_all":"1"})
-	return res_string, err
+	res, err := aofex.RequestPrivate("GET", aofex.SpotPath+"/openApi/wallet/list", map[string]string{"show_all":"1"}, nil)
+	return res, err
 }
-
 
 func (aofex *Aofex) FetchMarkets() (string, error) {
-	
-	route := "openApi/market/symbols"
-	url := aofex.SpotPath + route
-	
-	res, err := aofex.aofexRequestPublic("GET", url, map[string]string{})
+	res, err := aofex.RequestPublic("GET", aofex.SpotPath+"/openApi/market/symbols", map[string]string{}, map[string]string{})
 	return res, err
 }
 
-func (aofex *Aofex) FetchTrades() (string, error) {
-	route := "openApi/market/trade"
-	url := aofex.SpotPath + route
-	res, err := DCEAPI.BaseRequest("GET", url, "", nil)
+func (aofex *Aofex) FetchTrades(symbol string) (string, error) {
+	res, err := aofex.RequestPublic("GET", aofex.SpotPath+"/openApi/market/trade", map[string]string{"symbol":symbol}, nil)
 	return res, err
 }
 
-// func (aofex *Aofex) LimitBuyOrder(symbol string, amount, price float64) {
-// 	params := map[string]interface{}{"symbol": symbol, "amount":amount, "price":price}
-// 	url := "testurl"
-// 	// res, err := aofex.aofexRequestPrivate("POST", url, params)
-		
-// }
+func (aofex *Aofex) FetchDepth(symbol string) (string, error) {
+	res, err := aofex.RequestPublic("GET", aofex.SpotPath+"/openApi/market/depth", map[string]string{"symbol":symbol}, nil)
+	return res, err
+}
+
+func (aofex *Aofex) FetchOHLCV(symbol string, params map[string]string) (string, error) {
+	params["symbol"] = symbol
+	res, err := aofex.RequestPublic("GET", aofex.SpotPath+"/openApi/market/kline", params, nil)
+	return res, err
+}
+
+func (aofex *Aofex) FetchPercision(symbols ...string) (string, error) {
+	var params map[string]string
+	if len(symbols) == 0 {
+		params = map[string]string{}
+	} else {
+		params = map[string]string{"symbol":symbols[0]}
+	}
+	res, err := aofex.RequestPublic("GET", aofex.SpotPath+"/openApi/market/precision", params, nil)
+	return res, err 
+}
+
+func (aofex *Aofex) FetchTicker24H(symbols ...string) (string, error) {
+	var params map[string]string
+	if len(symbols) == 0 {
+		params = map[string]string{}
+	} else {
+		params = map[string]string{"symbol":symbols[0]}
+	}
+	res, err := aofex.RequestPublic("GET", aofex.SpotPath+"/openApi/market/24kline", params, nil)
+	return res, err 
+}
+
+func (aofex *Aofex) LimitSellOrder(symbol string, amount, price float64) (string, error) {
+	res, err := aofex.RequestPrivate("POST", aofex.SpotPath+"/openApi/entrust/add", nil, map[string]string{
+		"symbol": symbol,
+		"type": "sell-limit",
+		"amount": strconv.FormatFloat(float64(amount), 'E', -1, 64),
+		"price": strconv.FormatFloat(float64(price), 'E', -1, 64),
+	})
+	return res, err
+}
+
+func (aofex *Aofex) LimitBuyOrder(symbol string, amount, price float64) (string, error) {
+	res, err := aofex.RequestPrivate("POST", aofex.SpotPath+"/openApi/entrust/add", nil, map[string]string{
+		"symbol": symbol,
+		"type": "buy-limit",
+		"amount": strconv.FormatFloat(float64(amount), 'E', -1, 64),
+		"price": strconv.FormatFloat(float64(price), 'E', -1, 64),
+	})
+	return res, err
+}
+
+func (aofex *Aofex) MarketBuy(symbol string, amount float64) (string, error) {
+	res, err := aofex.RequestPrivate("POST", aofex.SpotPath+"/openApi/entrust/add", nil, map[string]string{
+		"symbol": symbol,
+		"type": "buy-market",
+		"amount": strconv.FormatFloat(float64(amount), 'E', -1, 64),
+	})
+	return res, err
+}
+
+func (aofex *Aofex) MarketSell(symbol string, amount float64) (string, error) {
+	res, err := aofex.RequestPrivate("POST", aofex.SpotPath+"/openApi/entrust/add", nil, map[string]string{
+		"symbol": symbol,
+		"type": "sell-market",
+		"amount": strconv.FormatFloat(float64(amount), 'E', -1, 64),
+	})
+	return res, err
+}
 
 // func (aofex *Aofex) LimitSellOrder(symbol string, amount, price float64) {
 
