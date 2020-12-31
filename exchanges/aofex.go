@@ -211,4 +211,6 @@ func (aofex *Aofex) CancelOrderByID(orderIDs ...string) (string, error) {
 	return res, err
 }
 
-func (aofex *Aofex) 
+func (aofex *Aofex) FetchCurrentOrders() (string, error) {
+	res, err := aofex.RequestPublic("GET", aofex.SpotPath+"/openApi/entrust/currentList", nil, nil)
+}
