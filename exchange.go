@@ -5,8 +5,9 @@ import (
 	"strings"
 	"io/ioutil"
 	_ "net/url"
-	"encoding/json"
+	_ "encoding/json"
 	"fmt"
+	_ "bytes"
 )
 
 type Exchange struct {
@@ -20,9 +21,8 @@ type Exchange struct {
 
 func BaseRequest(method, path string, params, body, headers map[string]string) (string, error) {
 	client := &http.Client{}
-	bodyStr, err := json.Marshal(body)
-	fmt.Println(body,string(bodyStr))
-	req, err := http.NewRequest(method, path, strings.NewReader(string(bodyStr)))
+	fmt.Println(body)
+	req, err := http.NewRequest(method, path, strings.NewReader(""))
 	q := req.URL.Query()
 	for k, v := range params {
 		q.Add(k, v)

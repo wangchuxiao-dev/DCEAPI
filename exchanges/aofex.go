@@ -97,13 +97,13 @@ func (aofex *Aofex) GetExchangeName() string {
 }
 
 func (aofex *Aofex) RequestPublic(method, path string, params, body map[string]string) (string, error) {
-	res, err := DCEAPI.BaseRequest(method, path, params, map[string]string{}, map[string]string{})
+	res, err := DCEAPI.BaseRequest(method, path, params, body, map[string]string{})
 	return res, err
 }
 
 func (aofex *Aofex) RequestPrivate(method, path string, params, body map[string]string) (string, error) {
 	headers := generateHeader(aofex.Exchange.Apikey, aofex.Exchange.Secret, params)
-	res, err := DCEAPI.BaseRequest(method, path, params, nil, headers)
+	res, err := DCEAPI.BaseRequest(method, path, params, body, headers)
 	return res, err
 }
 
@@ -193,7 +193,22 @@ func (aofex *Aofex) MarketSell(symbol string, amount float64) (string, error) {
 	return res, err
 }
 
-// func (aofex *Aofex) LimitSellOrder(symbol string, amount, price float64) {
+func (aofex *Aofex) CancelOrderBySymbol(symbol string) (string, error) {
+	res, err := aofex.RequestPrivate("POST", aofex.SpotPath+"/openApi/entrust/cancel", nil, map[string]string{
+		"symbol": symbol,
+	})
+	return res, err
+}
 
-// }
+func (aofex *Aofex) CancelOrderByID(orderIDs ...string) (string, error) {
+	var orderIDsStr string
+	for _, v := range orderIDs {
+		orderIDsStr += v
+	}
+	res, err := aofex.RequestPrivate("POST", aofex.SpotPath+"/openApi/entrust/cancel", nil, map[string]string{
+		"symbol": orderIDsStr,
+	})
+	return res, err
+}
 
+func (aofex *Aofex) 
