@@ -29,12 +29,6 @@ type Aofex struct {
 	Exchange *DCEAPI.Exchange
 }		
 
-type Balance struct {
-	Currency string
-	available float32
-	frozen float32
-}
-
 type BaseResponse struct {
 	Errno int 
 	Errmsg string 
@@ -136,7 +130,7 @@ func (aofex *Aofex) FetchBalance() (*DCEAPI.Balance, error) {
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println(res)
+	// fmt.Println(res)
 	err = json.Unmarshal([]byte(res), balance)
 	return balance, err
 }
