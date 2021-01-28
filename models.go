@@ -1,30 +1,55 @@
 package DCEAPI
 
 import (
-	_ "github.com/shopspring/decimal"
 	_"encoding/json"
 )
 
-// k线结构体
-type Ticker struct {
+// 市场结构体
+type Market struct {
 	Result []struct{
 		Symbol string
-		Last float64      
-		Buy  float64      
-		Sell float64     
-		High float64      
-		Low  float64      
-		Vol  float64 
-		Date uint64    
-	}  
+		Base_currency string
+		Quote_currency string
+		Min_size float64
+		Max_size float64
+		Max_price float64
+		Min_pirce float64
+		Maker_fee float64
+		Taker_fee float64
+	}
 }
 
 // 余额结构体
 type Balance struct {
 	Result []struct{
 		Currency string
-		Available float64
-		Frozen float64
+		Available string
+		Frozen string
+	}
+}
+
+// 市场成交结构体
+type Trade struct {
+	Result struct{
+		Symbol string
+		Ts int
+		Data []struct{
+			Id int
+			Amount string
+			Price string
+			Direction string
+			Ts int
+		}
+	}
+}
+
+// orderbook
+type OrderBook struct {
+	Result struct{
+		Symbol string
+		Ts int
+		Bids [][2]string
+		Asks [][2]string
 	}
 }
 
@@ -35,13 +60,43 @@ type Symbol struct {
 	Quoto string
 }
 
-// 订单结构体
-type Order struct {
-	ID int
-	Side string
-	Amount float64
-	Price float64
-	TotalPrice float64
-	Timestamp int
+// k线结构体
+type Kline struct {
+	Result struct{
+		Symbol string
+		Period string
+		Ts int
+		Data []struct{
+			Id int
+			Amount string
+			Count float64
+			Open, Close, Low, High, Vol string
+		}
+	}
 }
 
+// 精度结构体
+type Precision struct {
+	Result map[string]map[string]string
+}
+
+// ticker24H结构体
+type Kline24H struct {
+	Result []struct{
+		Symbol string
+		Data struct{
+			Id int
+			Amount string
+			Count float64
+			Open, Close, Low, High, Vol string
+		}
+	}
+}
+
+// 订单结构体
+type Order struct {
+	Order_sn string
+
+
+	
+}
