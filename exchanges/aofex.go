@@ -19,8 +19,6 @@ const (
 	CNPATH string = "https://aofex.co/"
 	SPOTPATH string = "https://openapi.aofex.co"
 	SWAPPATH string = "https://openapi-contract.aofex.co"
-	DEBUGSPOTPATH string = "http://api.q.xefoa.com/"
-	DEBUGSWAPPATH string = "http://openapi.q.xefoa.com"
 )
 
 type Aofex struct {
@@ -35,20 +33,6 @@ func NewAofex(secret, apikey string) *Aofex {
 		Path: PATH,
 		SpotPath: SPOTPATH,
 		SwapPath: SWAPPATH,
-		Exchange: &DCEAPI.Exchange{
-			Name: "AOFEX",
-			Secret: secret,
-			Apikey: apikey,
-		},
-	}
-	return aofex
-}
-
-func DebugNewAofex(secret, apikey string) *Aofex {
-	aofex := &Aofex{
-		Path: PATH,
-		SpotPath: DEBUGSPOTPATH,
-		SwapPath: DEBUGSWAPPATH,
 		Exchange: &DCEAPI.Exchange{
 			Name: "AOFEX",
 			Secret: secret,
