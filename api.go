@@ -20,5 +20,9 @@ type SpotAPI interface {
 	FetchOrder(OrderID string) (Order, error)
 }
 
+type SwapAPI interface {
+	GetExchangeName() string
+}
+
 
 
