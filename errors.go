@@ -4,6 +4,11 @@ import (
 	"fmt"
 )
 
+type BaseError struct {
+	ErrCode int
+	ErrMsg string
+}
+
 // http状态码!=200时候抛出
 type HttpError struct {
 	HttpCode int
@@ -11,45 +16,25 @@ type HttpError struct {
 }
 
 // 认证错误
-type InvalidSignatureError struct {
-	ErrCode int
-	ErrMsg string
-}
+type InvalidSignatureError BaseError
 
 // 交易对错误
-type SymbolError struct {
-	ErrCode int
-	ErrMsg string
-}
+type SymbolError BaseError
 
 // 余额不足
-type BalanceError struct {
-	ErrCode int
-	ErrMsg string
-}
+type BalanceError BaseError 
 
 // 未知订单
-type OrderNotFound struct {
-	ErrCode int
-	ErrMsg string
-}
+type OrderNotFound BaseError 
 
 // 交易所错误
-type ExchangeError struct {
-	ErrCode int
-	ErrMsg string
-}
+type ExchangeError BaseError
 
 // 下单精度，最大最小量错误
-type OrderLimitError struct {
-	ErrCode int
-	ErrMsg string
-}
+type OrderLimitError BaseError
 
-type OrderStateError struct {
-	ErrCode int
-	ErrMsg string
-}
+// 状态错误
+type OrderStateError BaseError
 
 func (exErr InvalidSignatureError) Error() string {
 	return fmt.Sprintf("invalid signature, error_code:%d, error_message:%s", exErr.ErrCode, exErr.ErrMsg)
@@ -64,7 +49,7 @@ func (exErr OrderNotFound) Error() string {
 }
 
 func (exErr BalanceError) Error() string {
-	return fmt.Sprintf("invalid order id, error_code:%d, error_message:%s", exErr.ErrCode, exErr.ErrMsg)
+	return fmt.Sprintf("account frozen balance insufficient error, error_code:%d, error_message:%s", exErr.ErrCode, exErr.ErrMsg)
 }
 
 func (exErr SymbolError) Error() string {

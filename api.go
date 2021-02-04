@@ -1,25 +1,24 @@
 package DCEAPI
 
-type WalletApi interface {
-	FetchBalance() (string, error)
-}
-
 type SpotAPI interface {
 	GetExchangeName() string
-	FetchMarkets() (string, error)
-	LimitBuyOrder(symbol string, amount, price float64) (string, error)
-	LimitSellOrder(symbol string, amount, price float64) (string, error)
-	MarketBuyOrder(symbol string, amount float64) (string, error)
-	MarketSellOrder(symbol string, amount float64) (string, error)
-	FetchTicker() (string, error)
-	FetchTicker24H() (string, error)
+	FetchBalance() ([]Balance, error)
+	FetchMarkets() ([]Market, error)
+	FetchTrades(symbol string) (Trade, error)
+	FetchDepth(symbol string) (OrderBook, error)
+	FetchOHLCV(symbol, period string, size int) (Kline, error)
+	FetchPercision(symbols ...string) (Precision, error)
+	FetchKline24H(symbols ...string) ([]Kline24H, error)
+	LimitBuyOrder(symbol, amount, price string) (Order, error)
+	LimitSellOrder(symbol, amount, price string) (Order, error)
+	MarketSellOrder(symbol, amount, price string) (Order, error)
+	MarketBuyOrder(symbol, amount, price string) (Order, error)
+	CancelOrderByIDs(orderIDs ...string) ([]Order, []Order, error)
+	CancelOrderBySymbol(symbol string) ([]Order, []Order, error)
+	FetchOpenOrders() ([]Order, error)
+	FetchClosedOrder() ([]Order, error)
+	FetchOrder(OrderID string) (Order, error)
 }
 
-type SwapAPI interface {
-	SwapLimitBuy()
-	SwapLimitSell()
-	SwapMarketBuy()
-	SwapMarketSell()
-}
 
 
