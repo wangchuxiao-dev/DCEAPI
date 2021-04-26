@@ -7,14 +7,14 @@ import (
 // 市场结构体
 type Market struct {
 	Symbol string
-	Base_currency string
-	Quote_currency string
-	Min_size float64
-	Max_size float64
-	Max_price float64
-	Min_pirce float64
-	Maker_fee float64
-	Taker_fee float64
+	BaseCurrency string
+	QuoteCurrency string
+	MinSize float64
+	MaxSize float64
+	MaxPrice float64
+	MinPrice float64
+	MakerFee float64
+	TakerFee float64
 }
 
 // 余额结构体
@@ -92,16 +92,15 @@ type Kline24H struct {
 
 // 订单结构体
 type Order struct {
-	Order_id int
-	Order_sn string
+	OrderID string
 	Symbol string
-	Ctime string 
-	Type int
+	CreateTime int
+	ClosedTime int
 	Side string 
 	Price string 
-	Number string 
-	Total_price string
-	Deal_number string 
-	Deal_price string
-	Status int
+	Amount string 
+	TotalPrice string
+	DealAmount string 
+	Dealprice string
+	Status string
 }

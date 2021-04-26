@@ -2,48 +2,28 @@
 
 import (
 	"github.com/PythonohtyP1900/DCEAPI/exchanges"
-	"github.com/PythonohtyP1900/DCEAPI"
 	"fmt"
 )
 
 func main() {
-	token := ""
-	secret := ""
+	apiKeyHB := "9a159d7e-vfd5ghr532-b48227db-511af"
+	secretHB := "b59ac6d6-f6d0b057-a088759f-87368"
 
-	aofex := exchanges.NewAofex(secret, token)
-	var spotApi DCEAPI.SpotAPI
-	spotApi = aofex
-
-	balance, err := spotApi.FetchBalance()
-	fmt.Println(balance, err)
-
-	markets, err := spotApi.FetchMarkets()
-	fmt.Println(markets, err)
-
-	trades, err := spotApi.FetchTrades("BTC-USDT")
-	fmt.Println(trades, err)
-
-	depth, err := spotApi.FetchDepth("BTC-USDT")
-	fmt.Println(depth, err)
-
-	kline, err := spotApi.FetchOHLCV("BTC-USDT", "5min", 100)
-	fmt.Println(kline, err)
-
-	precision, err := spotApi.FetchPercision("BTC-USDT")
-	fmt.Println(precision, err)
-
-	kline24, err := spotApi.FetchKline24H("BTC-USDT")
-	fmt.Println(kline24, err)
-
-	order, err := spotApi.LimitBuyOrder("EOS-AQ","2", "0.88")
+	huobi := exchanges.NewHuobi(secretHB, apiKeyHB)
+	order, err := huobi.LimitBuyOrder("btcusdt", "0.02", "52000")
 	fmt.Println(order, err)
 
-	result, err := spotApi.FetchOrder(order.Order_sn)
-	fmt.Println(result, err)
+	order, err = huobi.LimitSellOrder("btcusdt", "0.02", "52000")
+	fmt.Println(order, err)
 
-	sucess, failed, err := spotApi.CancelOrderByIDs(order.Order_sn)
-	fmt.Println(sucess, failed, err)
+	order, err = huobi.MarketBuyOrder("btcusdt", "10000")
+	fmt.Println(order, err)
 
-	orders, err := spotApi.FetchClosedOrder()
-	fmt.Println(orders, err)
+	order, err = huobi.MarketSellOrder("btcusdt", "0.9")
+	fmt.Println(order, err)
+	// apiKeyAOFEX := "348573c7a7b3d0f002fbea148cdf8571"
+	// secretAOFEX := "f6vwxrqoz2ptkrgb9t0m"
+	// aofex := exchanges.NewAofex(secretAOFEX, apiKeyAOFEX)
+	// order, err := aofex.LimitBuyOrder("BTC-USDT", "0.01", "51000")
+	// fmt.Println(order, err)
 }

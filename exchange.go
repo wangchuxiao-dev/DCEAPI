@@ -2,6 +2,7 @@ package DCEAPI
 
 import (
 	"net/http"
+	"net/url"
 	"strings"
 	"io/ioutil"
 	"fmt"
@@ -11,21 +12,30 @@ import (
 
 type Exchange struct {
 	Name string
-	Apikey string
+	ApiKey string
 	Secret string
 	Password string
 	LimitRate bool
 	Debug bool
 }
 
-func BuildRequestUrl(url string, params map[string]string) (string) {
-	if params != nil {
-		url += "?"
-	}
+func BuildRequestUrl(path string, params map[string]string) (string) {
+	value := url.Values{}
 	for k, v := range params {
-		url += (k+"="+v+"&")
+		value.Add(k, v)
 	}
-	return url
+	if params != nil {
+		path += "?"
+	}
+	return path + value.Encode()
+}
+
+func BuildRequestBody(body map[string]string) (string, error) {
+	formData := url.Values{}
+	for k, v := range body {
+		formData.Add(k, v)
+	}
+	return formData.Encode(), nil
 }
 
 // 封装基础请求, url已经通过参数builder
@@ -42,8 +52,9 @@ func HttpRequest(method, path, body string, headers map[string]string) ([]byte, 
 	for k, v := range headers {
 		req.Header.Add(k, v)
 	}
-
 	resp, err := client.Do(req)
+
+	fmt.Println("请求体:", body,)
 	if err != nil {
 		return nil, err
 	}
