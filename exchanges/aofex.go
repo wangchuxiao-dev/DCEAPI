@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"io"
 	"encoding/json"
+	"strings"
 	"time"
 
 	"github.com/PythonohtyP1900/DCEAPI"
@@ -132,7 +133,7 @@ func (aofex *Aofex) request(method, path string, params, body, headers map[strin
 		headers["Content-Type"] = "application/x-www-form-urlencoded"
 	}
 	res, err := DCEAPI.HttpRequest(method, path, bodyStr, headers)
-	// fmt.Println(string(res))
+	fmt.Println(string(res))
 	if err != nil {
 		return err
 	}
@@ -143,4 +144,8 @@ func (aofex *Aofex) request(method, path string, params, body, headers map[strin
 	}
 	err = model.hasError()
 	return err
+}
+
+func (aofex Aofex) SymbolFormatConversion(symbol string) string {
+	return strings.Replace(symbol, "/", "-", -1)
 }

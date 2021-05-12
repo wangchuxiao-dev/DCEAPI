@@ -63,3 +63,12 @@ func (exErr OrderLimitError) Error() string {
 func (exErr OrderStateError) Error() string {
 	return fmt.Sprintf("order state error, error_code:%d, error_message:%s", exErr.ErrCode, exErr.ErrMsg)
 }
+
+type UnsupportMethodError struct {
+	MethodName string
+	ExchangeName string
+}
+
+func (err UnsupportMethodError) Error() string {
+	return fmt.Sprintf("%s %s is unsupport", err.ExchangeName, err.MethodName)
+}

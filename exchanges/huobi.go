@@ -7,7 +7,7 @@ import (
 	"strings"
 	"net/url"
 	"time"
-	_ "fmt"
+	"fmt"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/base64"
@@ -82,12 +82,15 @@ func (huobi *Huobi) sign(host, method, path, secret string, params map[string]st
 	return result
 }
 
-func (huobi *Huobi) generateSignature(host, method, path, secret, apiKey string) map[string]string {
+func (huobi *Huobi) generateSignature(host, method, path, secret, apiKey string, params map[string]string) map[string]string {
 	signMap := map[string]string{
 		"AccessKeyId": apiKey,
 		"SignatureMethod": "HmacSHA256",
 		"SignatureVersion": "2",
 		"Timestamp": time.Now().UTC().Format("2006-01-02T15:04:05"),
+	}
+	for k, v := range params {
+		signMap[k] = v
 	}
 	signature := huobi.sign(host, method, path, secret, signMap)
 	signMap["Signature"] = signature
@@ -113,7 +116,7 @@ func (huobi Huobi) request(method, path string, params, body map[string]string, 
 	if err != nil {
 		return err
 	}
-	
+	fmt.Println(string(res))
 	err = json.Unmarshal(res, model)
 	if err != nil {
 		return err
@@ -132,7 +135,7 @@ func (huobi Huobi) GetAccount() (map[string]int, error) {
 		} `json:"data"`
 	}
 	accountResponse := &AccountResponse{}
-	signMap := huobi.generateSignature(huobi.Path, "GET", url, huobi.Exchange.Secret, huobi.Exchange.ApiKey)
+	signMap := huobi.generateSignature(huobi.Path, "GET", url, huobi.Exchange.Secret, huobi.Exchange.ApiKey, nil)
 	err := huobi.request("GET", huobi.Path+url, signMap, nil, accountResponse)
 	account := map[string]int{}
 	for _, v := range accountResponse.Data {
@@ -140,3 +143,9 @@ func (huobi Huobi) GetAccount() (map[string]int, error) {
 	}
 	return account, err
 } 
+
+func (huobi Huobi) SymbolFormatConversion(symbol string) string {
+	temp := strings.Split(strings.ToLower(symbol), "/")
+	newSymbol := temp[0] + temp[1]
+	return newSymbol
+}

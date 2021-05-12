@@ -53,8 +53,7 @@ func HttpRequest(method, path, body string, headers map[string]string) ([]byte, 
 		req.Header.Add(k, v)
 	}
 	resp, err := client.Do(req)
-
-	fmt.Println("请求体:", body,)
+	// fmt.Println(req.URL)
 	if err != nil {
 		return nil, err
 	}
@@ -64,9 +63,9 @@ func HttpRequest(method, path, body string, headers map[string]string) ([]byte, 
 	if err != nil {
 		return nil, err
 	}
-
+	
 	if resp.StatusCode != 200 {
-		return nil, errors.New(fmt.Sprintf("HttpStatusCode:%d ,Desc:%s", resp.StatusCode, string(resBody)))
+		return nil, errors.New(fmt.Sprintf("HttpStatusCodeError:%d ,Desc:%s", resp.StatusCode, string(resBody)))
 	}
 	return resBody, nil
 }
