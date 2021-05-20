@@ -4,6 +4,8 @@
 
 # 实例化一个交易所
 
+'''
+
 package main
 
 import (
@@ -73,3 +75,5 @@ func main() {
 	fmt.Println(success, failed, err)
 
 }
+
+'''

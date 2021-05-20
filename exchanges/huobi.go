@@ -39,7 +39,8 @@ func NewHuobi(secret, apiKey string) *Huobi {
 	}
 	account, err := huobi.GetAccount()
 	if err != nil {
-		panic("huobi初始化失败")
+		huobi.SpotID = 0
+		return huobi
 	}
 	huobi.SpotID = account["spot"]
 	return huobi

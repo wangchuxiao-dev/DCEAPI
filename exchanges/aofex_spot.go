@@ -195,6 +195,9 @@ func (aofex *Aofex) FetchOHLCV24H(symbol string) (DCEAPI.Kline, error) {
 	kline24HResponse := &Kline24HResponse{}
 	params := map[string]string{"symbol": aofex.symbolFormatConversion(symbol)}
 	err := aofex.request("GET", aofex.SpotPath+"/openApi/market/24kline", params, nil, nil, kline24HResponse)
+	if err != nil {
+		return DCEAPI.Kline{}, nil
+	}
 	kilne := DCEAPI.Kline{
 		Amount: kline24HResponse.Result[0].Data.Amount,
 		Count: kline24HResponse.Result[0].Data.Count,
