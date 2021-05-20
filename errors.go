@@ -9,12 +9,6 @@ type BaseError struct {
 	ErrMsg string
 }
 
-// http状态码!=200时候抛出
-type HttpError struct {
-	HttpCode int
-	HttpMsg string
-}
-
 // 认证错误
 type InvalidSignatureError BaseError
 
@@ -45,7 +39,7 @@ func (exErr ExchangeError) Error() string {
 }
 
 func (exErr OrderNotFound) Error() string {
-	return fmt.Sprintf("invalid order id, error_code:%d, error_message:%s", exErr.ErrCode, exErr.ErrMsg)
+	return fmt.Sprintf("invalid order, error_code:%d, error_message:%s", exErr.ErrCode, exErr.ErrMsg)
 }
 
 func (exErr BalanceError) Error() string {
@@ -71,4 +65,14 @@ type UnsupportMethodError struct {
 
 func (err UnsupportMethodError) Error() string {
 	return fmt.Sprintf("%s %s is unsupport", err.ExchangeName, err.MethodName)
+}
+
+// http状态码!=200时候抛出
+type HttpError struct {
+	HttpCode int
+	HttpMsg string
+}
+
+func (err HttpError) Error() string {
+	return fmt.Sprintf("HttpStatusCodeError:%d ,Desc:%s", err.HttpCode, err.HttpMsg)
 }

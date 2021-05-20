@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"sort"
 	"strconv"
+	"net/url"
 	"io"
 	"encoding/json"
 	"strings"
@@ -87,12 +88,12 @@ func (aofex *Aofex) generateHeader(apikey, secret string, params map[string]stri
 }
 
 func (aofex *Aofex) GetExchangeName() string {
-	return "AOFEX"
+	return "aofex"
 }
 
 type AofexBaseResponse struct {
-	Errno int 
-	ErrMsg string 
+	Errno int `json:"errno"`
+	ErrMsg string `json:"errmsg"`
 }
 
 type aofexResponse interface {
@@ -122,10 +123,18 @@ func (baseResponse *AofexBaseResponse) hasError() error {
 	return err
 }
 
+func (aofex *Aofex) buildRequestBody (body map[string]string) (string, error) {
+	formData := url.Values{}
+	for k, v := range body {
+		formData.Add(k, v)
+	}
+	return formData.Encode(), nil
+}
+
 func (aofex *Aofex) request(method, path string, params, body, headers map[string]string, model aofexResponse) error {
 	var err error
 	path = DCEAPI.BuildRequestUrl(path, params)
-	bodyStr, err := DCEAPI.BuildRequestBody(body)
+	bodyStr, err := aofex.buildRequestBody(body)
 	if err != nil {
 		return err
 	}
@@ -133,7 +142,6 @@ func (aofex *Aofex) request(method, path string, params, body, headers map[strin
 		headers["Content-Type"] = "application/x-www-form-urlencoded"
 	}
 	res, err := DCEAPI.HttpRequest(method, path, bodyStr, headers)
-	fmt.Println(string(res))
 	if err != nil {
 		return err
 	}
@@ -146,6 +154,13 @@ func (aofex *Aofex) request(method, path string, params, body, headers map[strin
 	return err
 }
 
-func (aofex Aofex) SymbolFormatConversion(symbol string) string {
+// BTC/USDT 转为 BTC-USDT
+func (aofex Aofex) symbolFormatConversion(symbol string) string {
 	return strings.Replace(symbol, "/", "-", -1)
 }
+
+// BTC-USDT 转为 BTC/USDT
+func (aofex Aofex) symbolFormatConversionToDCEFormat(symbol string) string {
+	return strings.Replace(symbol, "-", "/", -1)
+}
+

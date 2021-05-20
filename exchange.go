@@ -5,9 +5,7 @@ import (
 	"net/url"
 	"strings"
 	"io/ioutil"
-	"fmt"
 	"time"
-	"errors"
 )
 
 type Exchange struct {
@@ -30,13 +28,6 @@ func BuildRequestUrl(path string, params map[string]string) (string) {
 	return path + value.Encode()
 }
 
-func BuildRequestBody(body map[string]string) (string, error) {
-	formData := url.Values{}
-	for k, v := range body {
-		formData.Add(k, v)
-	}
-	return formData.Encode(), nil
-}
 
 // 封装基础请求, url已经通过参数builder
 func HttpRequest(method, path, body string, headers map[string]string) ([]byte, error) {
@@ -65,7 +56,7 @@ func HttpRequest(method, path, body string, headers map[string]string) ([]byte, 
 	}
 	
 	if resp.StatusCode != 200 {
-		return nil, errors.New(fmt.Sprintf("HttpStatusCodeError:%d ,Desc:%s", resp.StatusCode, string(resBody)))
+		return nil, HttpError{resp.StatusCode, string(resBody)}
 	}
 	return resBody, nil
 }

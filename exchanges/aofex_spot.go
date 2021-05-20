@@ -3,8 +3,10 @@ package exchanges
 import (
 	"github.com/PythonohtyP1900/DCEAPI"
 	"github.com/shopspring/decimal"
+	_ "encoding/json"
 
 	"strconv"
+	"fmt"
 )
 
 func (aofex *Aofex) FetchBalance() ([]DCEAPI.Balance, error) {
@@ -36,7 +38,7 @@ func (aofex *Aofex) FetchMarkets() ([]DCEAPI.Market, error) {
 	type MarketResponse struct {
 		AofexBaseResponse
 		Result []struct {
-			Symbol string
+			Symbol string `json:"symbol"`
 			BaseCurrency string `json:"base_currency"`
 			QuoteCurrency string `json:"quote_currency"`
 			MinSize float64 `json:"min_size"`
@@ -101,7 +103,7 @@ func (aofex *Aofex) FetchTrades(symbol, size string) ([]DCEAPI.Trade, error) {
 		} `json:"result"`
 	}
 	trade := &TradeResponse{}
-	params := map[string]string{"symbol":aofex.SymbolFormatConversion(symbol)}
+	params := map[string]string{"symbol":aofex.symbolFormatConversion(symbol)}
 	err := aofex.request("GET", aofex.SpotPath+url, params, nil, nil, trade)
 	trades := []DCEAPI.Trade{}
 	for _, v := range trade.Result.Data {
@@ -129,7 +131,7 @@ func (aofex *Aofex) FetchOrderBook(symbol string, params map[string]string) (DCE
 		} `json:"result"`
 	}
 	depthResponse := &DepthResponse{}
-	reqParams := map[string]string{"symbol":aofex.SymbolFormatConversion(symbol)}
+	reqParams := map[string]string{"symbol":aofex.symbolFormatConversion(symbol)}
 	for k, v := range params {
 		reqParams[k] = v
 	}
@@ -158,11 +160,11 @@ func (aofex *Aofex) FetchOHLCV(symbol, period, size string) ([]DCEAPI.Kline, err
 		} `json:"result"`
 	}
 	klinesResponse := &OHLCVResponse{}
-	params := map[string]string{"symbol":aofex.SymbolFormatConversion(symbol), "period":period, "size":size}
+	params := map[string]string{"symbol":aofex.symbolFormatConversion(symbol), "period":period, "size":size}
 	err := aofex.request("GET", aofex.SpotPath+"/openApi/market/kline", params, nil, nil, klinesResponse)
-	kilnes := []DCEAPI.Kline{}
+	klines := []DCEAPI.Kline{}
 	for _, v := range klinesResponse.Result.Data{
-		kilnes = append(kilnes, DCEAPI.Kline{
+		klines = append(klines, DCEAPI.Kline{
 			Amount: v.Amount,
 			Count: v.Count,
 			Open: v.Open,
@@ -172,7 +174,7 @@ func (aofex *Aofex) FetchOHLCV(symbol, period, size string) ([]DCEAPI.Kline, err
 			Vol: v.Vol,
 		})
 	}
-	return kilnes, err
+	return klines, err
 }
 
 func (aofex *Aofex) FetchOHLCV24H(symbol string) (DCEAPI.Kline, error) {
@@ -191,7 +193,7 @@ func (aofex *Aofex) FetchOHLCV24H(symbol string) (DCEAPI.Kline, error) {
 		} `json:"result"`
 	}
 	kline24HResponse := &Kline24HResponse{}
-	params := map[string]string{"symbol": aofex.SymbolFormatConversion(symbol)}
+	params := map[string]string{"symbol": aofex.symbolFormatConversion(symbol)}
 	err := aofex.request("GET", aofex.SpotPath+"/openApi/market/24kline", params, nil, nil, kline24HResponse)
 	kilne := DCEAPI.Kline{
 		Amount: kline24HResponse.Result[0].Data.Amount,
@@ -210,18 +212,22 @@ func (aofex *Aofex) FetchOHLCV24H(symbol string) (DCEAPI.Kline, error) {
 func (aofex *Aofex) Order(side, symbol, amount, price string) (DCEAPI.Order, error) {
 	type OrderResponse struct {
 		AofexBaseResponse
-		Result DCEAPI.Order
+		Result struct{
+			OrderID string `json:"order_sn"`
+		} `json:"result"`
 	}
 	orderResponse := &OrderResponse{}
 	body := map[string]string{
-		"symbol": aofex.SymbolFormatConversion(symbol),
+		"symbol": aofex.symbolFormatConversion(symbol),
 		"type": side,
 		"amount": amount,
 		"price": price,
 	}
 	headers := aofex.generateHeader(aofex.Exchange.ApiKey, aofex.Exchange.Secret, body)
 	err := aofex.request("POST", aofex.SpotPath+"/openApi/entrust/add", nil, body, headers, orderResponse)
-	return orderResponse.Result, err
+	var order DCEAPI.Order
+	order.OrderID = orderResponse.Result.OrderID
+	return order, err
 }
 
 func (aofex *Aofex) LimitBuyOrder(symbol, amount, price string) (DCEAPI.Order, error) {
@@ -241,7 +247,7 @@ func (aofex *Aofex) MarketBuyOrder(symbol, amount string) (DCEAPI.Order, error) 
 }
 
 // 使用order_sn来撤单
-func (aofex *Aofex) CancelOrderByIDs(orderIDs ...string) ([]DCEAPI.Order, []DCEAPI.Order, error){
+func (aofex *Aofex) BatchCancelOrder(orderIDs ...string) ([]DCEAPI.Order, []DCEAPI.Order, error){
 	var orderIDStr string
 	for i, orderID := range orderIDs {
 		orderIDStr += orderID
@@ -256,18 +262,42 @@ func (aofex *Aofex) CancelOrderByIDs(orderIDs ...string) ([]DCEAPI.Order, []DCEA
 }
 
 // 单个order_id撤单
-func (aofex *Aofex) CancelOrder(OrderID string) ([]DCEAPI.Order, []DCEAPI.Order, error) {
+func (aofex *Aofex) CancelOrder(OrderID string) (error) {
 	body := map[string]string{
 		"order_ids": OrderID,
 	}
-	return aofex.cancelOrder(body)
+	type CancelOrderResponse struct {
+		AofexBaseResponse
+		Result struct{
+			Success []string `json:"success"`
+			Failed []string `json:"failed"`
+		} `json:"result"`
+	}
+	cancelOrderResponse := &CancelOrderResponse{}
+	headers := aofex.generateHeader(aofex.Exchange.ApiKey, aofex.Exchange.Secret, body)
+	err := aofex.request("POST", aofex.SpotPath+"/openApi/entrust/cancel", nil, body, headers, cancelOrderResponse)
+	if err != nil {
+		return err
+	}
+	for _, order := range cancelOrderResponse.Result.Success {
+		if order == OrderID {
+			return nil
+		}
+	}
+	for _, order := range cancelOrderResponse.Result.Failed {
+		if order == OrderID {
+			return DCEAPI.OrderNotFound{}
+		}
+	}
+	return DCEAPI.OrderNotFound{}
 }
 
 // 使用symbol撤单
-func (aofex *Aofex) CancelOrderBySymbol(symbol string) ([]DCEAPI.Order, []DCEAPI.Order, error) {
+func (aofex *Aofex) CancelOrderBySymbol(symbols ...string) ([]DCEAPI.Order, []DCEAPI.Order, error) {
 	body := map[string]string{
-		"symbol": symbol,
+		"symbol": aofex.symbolFormatConversion(symbols[0]),
 	}
+	fmt.Println(body)
 	return aofex.cancelOrder(body)
 }
 
@@ -276,9 +306,9 @@ func (aofex *Aofex) cancelOrder(body map[string]string) ([]DCEAPI.Order, []DCEAP
 	type CancelOrderResponse struct {
 		AofexBaseResponse
 		Result struct{
-			Success []string
-			Failed []string
-		}
+			Success []string `json:"success"`
+			Failed []string `json:"failed"`
+		} `json:"result"`
 	}
 	cancelOrderResponse := &CancelOrderResponse{}
 	headers := aofex.generateHeader(aofex.Exchange.ApiKey, aofex.Exchange.Secret, body)
@@ -294,32 +324,66 @@ func (aofex *Aofex) cancelOrder(body map[string]string) ([]DCEAPI.Order, []DCEAP
 	return successOrders, failedOrders, err
 }
 
-func (aofex *Aofex) FetchOpenOrders() ([]DCEAPI.Order, error) {
-	type OpenOrderResponse struct {
-		AofexBaseResponse
-		Result []DCEAPI.Order
-	}
-	openOrderResponse := &OpenOrderResponse{}
-	headers := aofex.generateHeader(aofex.Exchange.ApiKey, aofex.Exchange.Secret, nil)
-	err := aofex.request("GET", aofex.SpotPath+"/openApi/entrust/currentList", nil, nil, headers, openOrderResponse)
-	return openOrderResponse.Result, err 
+type aofexOrder struct{
+	OrderID string `json:"order_sn"`
+	Symbol string `json:"symbol"`
+	CreateTime string `json:"ctime"`
+	Type int `json:"type"`
+	Side string `json:"side"`
+	Price string `json:"price"`
+	Amount decimal.Decimal `json:"number"`
+	TotalPrice decimal.Decimal `json:"total_price"`
+	DealAmount decimal.Decimal `json:"deal_number"`
+	DealPrice decimal.Decimal `json:"deal_price"`
+	Status int `json:"status"`
 }
 
-func (aofex *Aofex) FetchClosedOrder() ([]DCEAPI.Order, error) {
+func (aofex *Aofex) FetchOpenOrders(symbol ...string) ([]DCEAPI.Order, error) {
 	type OpenOrderResponse struct {
 		AofexBaseResponse
-		Result []DCEAPI.Order
+		Result []aofexOrder
+	}
+	var params map[string]string
+	if len(symbol) >= 1 {
+		params = map[string]string{
+			"symbol":symbol[0],
+		}
 	}
 	openOrderResponse := &OpenOrderResponse{}
-	headers := aofex.generateHeader(aofex.Exchange.ApiKey, aofex.Exchange.Secret, nil)
-	err := aofex.request("GET", aofex.SpotPath+"/openApi/entrust/historyList", nil, nil, headers, openOrderResponse)
-	return openOrderResponse.Result, err 
+	headers := aofex.generateHeader(aofex.Exchange.ApiKey, aofex.Exchange.Secret, params)
+	err := aofex.request("GET", aofex.SpotPath+"/openApi/entrust/currentList", params, nil, headers, openOrderResponse)
+	var openOrders []DCEAPI.Order
+	for _, v := range openOrderResponse.Result {
+		openOrders = append(openOrders, *aofex.orderFormatConversionToDCEFormat(v))
+	}
+	return openOrders, err 
+}
+
+func (aofex *Aofex) FetchClosedOrders(symbol ...string) ([]DCEAPI.Order, error) {
+	type OpenOrderResponse struct {
+		AofexBaseResponse
+		Result []aofexOrder
+	}
+	var params map[string]string
+	if len(symbol) >= 1 {
+		params = map[string]string{
+			"symbol": aofex.symbolFormatConversion(symbol[0]),
+		}
+	}
+	openOrderResponse := &OpenOrderResponse{}
+	headers := aofex.generateHeader(aofex.Exchange.ApiKey, aofex.Exchange.Secret, params)
+	err := aofex.request("GET", aofex.SpotPath+"/openApi/entrust/historyList", params, nil, headers, openOrderResponse)
+	var openOrders []DCEAPI.Order
+	for _, v := range openOrderResponse.Result {
+		openOrders = append(openOrders, *aofex.orderFormatConversionToDCEFormat(v))
+	}
+	return openOrders, err 
 }
 
 func (aofex *Aofex) FetchOrder(OrderID string) (DCEAPI.Order, error) {
 	type OrderResponse struct {
 		AofexBaseResponse
-		Result DCEAPI.Order
+		Result aofexOrder `json:"result"`
 	}
 	params := map[string]string{
 		"order_sn": OrderID,
@@ -327,5 +391,52 @@ func (aofex *Aofex) FetchOrder(OrderID string) (DCEAPI.Order, error) {
 	orderResponse := &OrderResponse{}
 	headers := aofex.generateHeader(aofex.Exchange.ApiKey, aofex.Exchange.Secret, params)
 	err := aofex.request("GET", aofex.SpotPath+"/openApi/entrust/status", params, nil, headers, orderResponse)
-	return orderResponse.Result, err
+	order := aofex.orderFormatConversionToDCEFormat(orderResponse.Result)
+	if orderResponse.Result.OrderID == "" {
+		return *order, DCEAPI.OrderNotFound{ErrMsg:fmt.Sprintf("invalid order id %s", OrderID)}
+	}
+	return *order, err
+}
+
+func (aofex Aofex) orderFormatConversionToDCEFormat(aorder aofexOrder) (*DCEAPI.Order){
+	var orderType, status string
+	var dealAmountQuote decimal.Decimal
+	var dealAmountBase decimal.Decimal
+	dealAmountBase = aorder.DealAmount
+	switch aorder.Type {
+	case 1:
+		orderType = "market"
+	case 2: 
+		orderType = "limit"
+	}
+	switch aorder.Status {
+	case 1:
+		status = "open"
+	case 2:
+		status = "partial-closed"
+	case 3:
+		status = "closed"
+	case 4:
+		status = "canceling"
+	case 5:
+		status = "partial-canceld"
+	case 6:
+		status = "canceld"
+	}
+	price, _ := decimal.NewFromString(aorder.Price)
+	order := DCEAPI.Order{
+		OrderID: aorder.OrderID,
+		Symbol: aofex.symbolFormatConversionToDCEFormat(aorder.Symbol),
+		CreateTime: dateTimeToTimeStamp(aorder.CreateTime),
+		Type: orderType,
+		Side: aorder.Side,
+		Price: price,
+		Amount: aorder.Amount,
+		DealPrice: aorder.DealPrice,
+		TotalPrice: aorder.TotalPrice,
+		DealAmountQuote: dealAmountQuote,
+		DealAmountBase: dealAmountBase,
+		Status: status,
+	}
+	return &order
 }

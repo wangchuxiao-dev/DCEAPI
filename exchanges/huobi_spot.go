@@ -30,7 +30,7 @@ func (huobi Huobi) FetchBalance() ([]DCEAPI.Balance, error) {
 	for i, v := range balanceResponse.Data.List {
 		if i % 2 == 0 {
 			balance := DCEAPI.Balance{
-				Currency: v.Currency,
+				Currency: strings.ToUpper(v.Currency),
 				Free: v.Balance,
 				Frozen: balanceResponse.Data.List[i+1].Balance,
 			}
@@ -88,9 +88,9 @@ func (huobi Huobi) Order(side, symbol, amount, price string) (DCEAPI.Order, erro
 		OrderID string `json:"data"`
 	}
 	orderResponse := &OrderResponse{}
-	body := map[string]string{
+	body := map[string]interface{}{
 		"account-id": strconv.Itoa(huobi.SpotID),
-		"symbol": huobi.SymbolFormatConversion(symbol),
+		"symbol": huobi.symbolFormatConversion(symbol),
 		"type": side,
 		"source": "spot-api",
 		"price": price,
@@ -117,53 +117,35 @@ func (huobi Huobi) MarketSellOrder(symbol, amount string) (DCEAPI.Order, error){
 	return huobi.Order("sell-market", symbol, amount, "")
 }
 
+type huobiOrder struct{
+	OrderID int `json:"id"`
+	Symbol string `json:"symbol"`
+	Account int `json:"account-id"`
+	Amount decimal.Decimal `json:"amount"`
+	Price decimal.Decimal `json:"price"`
+	CreateTime int `json:"created-at"`
+	ClosedTime int `json:"finished-at"`
+	Type string `json:"type"`
+	Status string `json:"state"`
+	Fee decimal.Decimal `json:"field-fees"`
+	FilledAmountBase decimal.Decimal `json:"field-amount"`
+	FilledAmountQuote decimal.Decimal `json:"field-cash-amount"`
+} 
+
 func (huobi Huobi) FetchOrder(orderID string) (DCEAPI.Order, error) {
 	url := "/v1/order/orders/" + orderID
 	type OrderRespose struct {
 		huobiBaseResponse
-		Data struct{
-			OrderID int `json:"id"`
-			Symbol string `json:"symbol"`
-			Account int `json:"account-id"`
-			Amount decimal.Decimal `json:"amount"`
-			Price decimal.Decimal `json:"price"`
-			CreateTime int `json:"created-at"`
-			ClosedTime int `json:"finished-at"`
-			Type string `json:"type"`
-			Status string `json:"state"`
-			Fee decimal.Decimal `json:"field-fees"`
-			FilledAmountBase decimal.Decimal `json:"field-amount"`
-			FilledAmountQuote decimal.Decimal `json:"field-cash-amount"`
-		} `json:"data"`
+		Data huobiOrder `json:"data"`
 	}
 	orderResponse := &OrderRespose{}
 	signMap := huobi.generateSignature(huobi.Path, "GET", url, huobi.Exchange.Secret, huobi.Exchange.ApiKey, nil)
 	err := huobi.request("GET", huobi.Path+url, signMap, nil, orderResponse)
-	status := orderResponse.Data.Status
-	switch status {
-		case "filled":
-			status = "closed"
-		case "submitted":
-			status = "open"
-		case "canceled":
-			status = "canceled"
+	if err != nil{
+		return DCEAPI.Order{}, err
 	}
-	order := DCEAPI.Order{
-		OrderID:strconv.Itoa(orderResponse.Data.OrderID),
-		Symbol:orderResponse.Data.Symbol,
-		CreateTime:orderResponse.Data.CreateTime,
-		ClosedTime:orderResponse.Data.ClosedTime,
-		Type:strings.Split(orderResponse.Data.Type, "-")[1],
-		Side:strings.Split(orderResponse.Data.Type, "-")[0],
-		Amount:orderResponse.Data.Amount,
-		Price:orderResponse.Data.Price,
-		DealPrice:orderResponse.Data.Price,
-		Fee:orderResponse.Data.Fee,
-		FilledAmountQuote:orderResponse.Data.FilledAmountQuote,
-		FilledAmountBase:orderResponse.Data.FilledAmountBase,
-		Status:status,
-	}
-	return order, err
+	order := huobi.orderFormatConversionToDCEFormat(orderResponse.Data)
+	return *order, err
 }
 
 func (huobi Huobi) CancelOrder(orderID string) (error) {
@@ -178,11 +160,55 @@ func (huobi Huobi) CancelOrder(orderID string) (error) {
 	return err
 }
 
+func (huobi Huobi) BatchCancelOrder(orderIDs ...string) ([]DCEAPI.Order, []DCEAPI.Order, error) {
+	url := "/v1/order/orders/batchcancel"
+	body := map[string]interface{}{
+		"order-ids":orderIDs,
+	}
+	type BatchCancelResponse struct{
+		huobiBaseResponse
+		Data struct{
+			Success []string `json:"success"`
+			Failed []struct{
+				OrderID string `json:"order-id"`
+			} `json:"failed"`
+		} `json:"data"`
+	}
+	batchCancelResponse := &BatchCancelResponse{}
+	signMap := huobi.generateSignature(huobi.Path, "POST", url, huobi.Exchange.Secret, huobi.Exchange.ApiKey, nil)
+	err := huobi.request("POST", huobi.Path+url, signMap, body, batchCancelResponse)
+	successOrders := []DCEAPI.Order{}
+	failedOrders := []DCEAPI.Order{}
+	for _, v := range batchCancelResponse.Data.Success {
+		successOrders = append(successOrders, DCEAPI.Order{
+			OrderID: v,
+		})
+	}
+	for _, v := range batchCancelResponse.Data.Failed {
+		failedOrders = append(failedOrders, DCEAPI.Order{
+			OrderID: v.OrderID,
+		})
+	}
+	return successOrders, failedOrders, err
+}
+
+func (huobi Huobi) CancelOrderBySymbol(symbols ...string) ([]DCEAPI.Order, []DCEAPI.Order, error){
+	return []DCEAPI.Order{}, []DCEAPI.Order{}, DCEAPI.UnsupportMethodError{MethodName:"CancelOrderBySymbol", ExchangeName:"huobipro"}
+}
+
+func (huobi Huobi) FetchOpenOrders(symbol ...string) ([]DCEAPI.Order, error) {
+	return []DCEAPI.Order{}, DCEAPI.UnsupportMethodError{MethodName:"FetchOpenOrders", ExchangeName:"huobipro"}
+}
+
+func (huobi Huobi) FetchClosedOrders(symbol ...string) ([]DCEAPI.Order, error) {
+	return []DCEAPI.Order{}, DCEAPI.UnsupportMethodError{MethodName:"FetchClosedOrders", ExchangeName:"huobipro"}
+}
+
 // 返回指定交易对最新的一个交易记录
 func (huobi Huobi) FetchTrade(symbol string) ([]DCEAPI.Trade, error) {
 	url := "/market/trade"
 	params := map[string]string{
-		"symbol": huobi.SymbolFormatConversion(symbol),
+		"symbol": huobi.symbolFormatConversion(symbol),
 	}
 	type TradeResponse struct {
 		huobiBaseResponse
@@ -215,7 +241,7 @@ func (huobi Huobi) FetchTrade(symbol string) ([]DCEAPI.Trade, error) {
 func (huobi Huobi) FetchTrades(symbol string, size string) ([]DCEAPI.Trade, error) {
 	url := "/market/history/trade"
 	params := map[string]string{
-		"symbol": huobi.SymbolFormatConversion(symbol),
+		"symbol": huobi.symbolFormatConversion(symbol),
 	}
 	if size != "" {
 		params["size"] = size
@@ -252,7 +278,7 @@ func (huobi Huobi) FetchTrades(symbol string, size string) ([]DCEAPI.Trade, erro
 func (huobi Huobi) FetchOrderBook(symbol string, params map[string]string) (DCEAPI.OrderBook, error) {
 	url := "/market/depth"
 	reqParams := map[string]string{
-		"symbol": huobi.SymbolFormatConversion(symbol),
+		"symbol": huobi.symbolFormatConversion(symbol),
 	}
 	for k, v := range params {
 		reqParams[k] = v
@@ -279,7 +305,7 @@ func (huobi Huobi) FetchOrderBook(symbol string, params map[string]string) (DCEA
 func (huobi Huobi) FetchOHLCV(symbol, period, size string) ([]DCEAPI.Kline, error) {
 	url := "/market/history/kline"
 	reqParams := map[string]string{
-		"symbol": huobi.SymbolFormatConversion(symbol),
+		"symbol": huobi.symbolFormatConversion(symbol),
 		"period": period,
 	} 
 	type OHLCVResponse struct{
@@ -313,7 +339,7 @@ func (huobi Huobi) FetchOHLCV(symbol, period, size string) ([]DCEAPI.Kline, erro
 
 func (huobi Huobi) FetchOHLCV24H(symbol string) (DCEAPI.Kline, error) {
 	url := "/market/detail"
-	reqParams := map[string]string{"symbol":huobi.SymbolFormatConversion(symbol)}
+	reqParams := map[string]string{"symbol":huobi.symbolFormatConversion(symbol)}
 	type OHLCVResponse struct{
 		huobiBaseResponse
 		Tick struct{
@@ -355,4 +381,33 @@ func (huobi Huobi) FetchFee(symbols... string) (error) {
 	err := huobi.request("GET", huobi.Path+url, signMap, nil, feeResponse)
 	fmt.Println(feeResponse.Data)
 	return err
+}
+
+func (huobi Huobi) orderFormatConversionToDCEFormat(horder huobiOrder) (*DCEAPI.Order){
+	status := horder.Status
+	switch status {
+		case "filled":
+			status = "closed"
+		case "submitted":
+			status = "open"
+		case "canceled":
+			status = "canceled"
+	}
+	temp := strings.Split(horder.Type, "-")
+	order := DCEAPI.Order{
+		OrderID: strconv.Itoa(horder.OrderID),
+		Symbol: huobi.symbolFormatConversionToDCEFormat(horder.Symbol),
+		Type: temp[1],
+		Side: temp[0],
+		CreateTime: horder.CreateTime/1000,
+		ClosedTime: horder.ClosedTime/1000,
+		Price: horder.Price,
+		Amount: horder.Amount,
+		DealPrice: horder.Price,
+		DealAmountBase: horder.FilledAmountBase,
+		DealAmountQuote: horder.FilledAmountQuote,
+		Fee: horder.Fee,
+		Status: status,
+	}
+	return &order
 }

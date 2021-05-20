@@ -7,7 +7,6 @@ import (
 	"strings"
 	"net/url"
 	"time"
-	"fmt"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/base64"
@@ -15,6 +14,10 @@ import (
 
 const (
 	HUOBI_PATH string = "https://api.huobi.pro"
+)
+
+var (
+	BASE_CURRENCIES []string = []string{"usdt", "husd", "btc", "eth", "ht", "alts"}
 )
 
 type Huobi struct {
@@ -98,10 +101,10 @@ func (huobi *Huobi) generateSignature(host, method, path, secret, apiKey string,
 }
 
 func (huobi Huobi) GetExchangeName() string {
-	return "HuobiPro"
+	return "huobipro"
 }
 
-func (huobi Huobi) request(method, path string, params, body map[string]string, model huobiResponse) error {
+func (huobi Huobi) request(method, path string, params map[string]string, body map[string]interface{}, model huobiResponse) error {
 	var err error
 	path = DCEAPI.BuildRequestUrl(path, params)
 	headers := map[string]string{}
@@ -116,7 +119,7 @@ func (huobi Huobi) request(method, path string, params, body map[string]string, 
 	if err != nil {
 		return err
 	}
-	fmt.Println(string(res))
+	
 	err = json.Unmarshal(res, model)
 	if err != nil {
 		return err
@@ -144,8 +147,31 @@ func (huobi Huobi) GetAccount() (map[string]int, error) {
 	return account, err
 } 
 
-func (huobi Huobi) SymbolFormatConversion(symbol string) string {
+func (huobi Huobi) symbolFormatConversion(symbol string) string {
 	temp := strings.Split(strings.ToLower(symbol), "/")
 	newSymbol := temp[0] + temp[1]
 	return newSymbol
 }
+
+func (huobi Huobi) symbolFormatConversionToDCEFormat(symbol string) string {
+	reverseString := func(s string) string{
+		var result string
+		for i:=len(s)-1; i>=0; i-- {
+			result += string(s[i])
+		}
+		return result
+	}
+	var base, temp, quote string
+	for i:=len(symbol)-1; i>=0; i-- {
+		temp += string(symbol[i])
+		for _, j := range BASE_CURRENCIES{
+			if reverseString(temp) == j {
+				base = j
+				quote = symbol[0:i]
+			}
+		}
+	}
+	symbol = strings.ToUpper(quote) + "/" + strings.ToUpper(base)
+	return symbol
+}
+

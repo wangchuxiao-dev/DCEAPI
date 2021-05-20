@@ -68,9 +68,10 @@ type Order struct {
 	Side string //方向 buy/sell
 	Price decimal.Decimal // 下单价格 
 	Amount decimal.Decimal // 下单数量
+	TotalPrice decimal.Decimal // 总价
 	DealPrice decimal.Decimal // 实际成交价格
-	FilledAmountQuote decimal.Decimal //已经成交数量报价
-	FilledAmountBase decimal.Decimal // 已经成交数量基准v
+	DealAmountQuote decimal.Decimal //已经成交数量报价
+	DealAmountBase decimal.Decimal // 已经成交数量基准
 	Fee decimal.Decimal //手续费
 	Status string //订单状态
 }
