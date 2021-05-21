@@ -1,8 +1,9 @@
 # 主流数字货币交易所Golang通用SDK
 
 支持交易所：BINANCE HUOBIPRO AOFEX
+切换交易所毋需更改任何代码
 
-# 实例化一个交易所
+# 代码实例
 
 ```
 package main
