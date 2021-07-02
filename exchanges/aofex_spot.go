@@ -1,33 +1,34 @@
 package exchanges
 
 import (
-	"github.com/PythonohtyP1900/DCEAPI"
-	"github.com/shopspring/decimal"
 	_ "encoding/json"
 
-	"strconv"
+	"github.com/PythonohtyP1900/DCEAPI"
+	"github.com/shopspring/decimal"
+
 	"fmt"
+	"strconv"
 )
 
 func (aofex *Aofex) FetchBalance() ([]DCEAPI.Balance, error) {
 	type BalanceResponse struct {
 		AofexBaseResponse
-		Data []struct{
-			Currency string `json:"currency"`
-			Free decimal.Decimal `json:"Available"`
-			Frozen decimal.Decimal `json:"Frozen"`
+		Data []struct {
+			Currency string          `json:"currency"`
+			Free     decimal.Decimal `json:"Available"`
+			Frozen   decimal.Decimal `json:"Frozen"`
 		} `json:"Result"`
 	}
 	balanceResponse := &BalanceResponse{}
-	params := map[string]string{"show_all":"1"}
+	params := map[string]string{"show_all": "1"}
 	headers := aofex.generateHeader(aofex.Exchange.ApiKey, aofex.Exchange.Secret, params)
 	err := aofex.request("GET", aofex.SpotPath+"/openApi/wallet/list", params, nil, headers, balanceResponse)
 	var balances []DCEAPI.Balance
 	for _, v := range balanceResponse.Data {
 		balances = append(balances, DCEAPI.Balance{
 			Currency: v.Currency,
-			Free: v.Free,
-			Frozen: v.Frozen,
+			Free:     v.Free,
+			Frozen:   v.Frozen,
 		})
 	}
 	return balances, err
@@ -38,15 +39,15 @@ func (aofex *Aofex) FetchMarkets() ([]DCEAPI.Market, error) {
 	type MarketResponse struct {
 		AofexBaseResponse
 		Result []struct {
-			Symbol string `json:"symbol"`
-			BaseCurrency string `json:"base_currency"`
-			QuoteCurrency string `json:"quote_currency"`
-			MinSize float64 `json:"min_size"`
-			MaxSize float64 `json:"max_size"`
-			MaxPrice float64 `json:"max_price"`
-			MinPrice float64 `json:"min_price"`
-			MakerFee float64 `json:"maker_fee"`
-			TakerFee float64 `json:"taker_fee"`
+			Symbol        string  `json:"symbol"`
+			BaseCurrency  string  `json:"base_currency"`
+			QuoteCurrency string  `json:"quote_currency"`
+			MinSize       float64 `json:"min_size"`
+			MaxSize       float64 `json:"max_size"`
+			MaxPrice      float64 `json:"max_price"`
+			MinPrice      float64 `json:"min_price"`
+			MakerFee      float64 `json:"maker_fee"`
+			TakerFee      float64 `json:"taker_fee"`
 		} `json:"result"`
 	}
 	response := &MarketResponse{}
@@ -54,65 +55,65 @@ func (aofex *Aofex) FetchMarkets() ([]DCEAPI.Market, error) {
 	if err != nil {
 		return markets, err
 	}
-	type PrecisionStruct struct{
+	type PrecisionStruct struct {
 		AofexBaseResponse
-		Result map[string]map[string]string	
+		Result map[string]map[string]string
 	}
 	precisionResponse := &PrecisionStruct{}
 	err = aofex.request("GET", aofex.SpotPath+"/openApi/market/precision", nil, nil, nil, precisionResponse)
 	for _, result := range response.Result {
-		for symbol, v:= range precisionResponse.Result{
+		for symbol, v := range precisionResponse.Result {
 			if result.Symbol == symbol {
 				pricePrecision, _ := strconv.Atoi(v["price"])
 				amountPrecision, _ := strconv.Atoi(v["amount"])
 				minQuantity, _ := strconv.ParseFloat(v["minQuantity"], 64)
 				maxQuantity, _ := strconv.ParseFloat(v["maxQuantity"], 64)
 				market := DCEAPI.Market{
-					Symbol: result.Symbol,
-					BaseCurrency: result.BaseCurrency,
-					QuoteCurrency: result.QuoteCurrency,
-					PricePrecision: pricePrecision,
-					AmountPrecision: amountPrecision,
-					LimitMinOrderAmount: minQuantity,
+					Symbol:                   result.Symbol,
+					BaseCurrency:             result.BaseCurrency,
+					QuoteCurrency:            result.QuoteCurrency,
+					PricePrecision:           pricePrecision,
+					AmountPrecision:          amountPrecision,
+					LimitMinOrderAmount:      minQuantity,
 					SellMarketMinOrderAmount: minQuantity,
 					SellMarketMaxOrderAmount: maxQuantity,
-					LimitMaxOrderAmount: maxQuantity,
+					LimitMaxOrderAmount:      maxQuantity,
 				}
 				markets = append(markets, market)
-			}	
+			}
 		}
 	}
 	return markets, err
 }
 
 func (aofex *Aofex) FetchTrade(symbol string) ([]DCEAPI.Trade, error) {
-	return []DCEAPI.Trade{}, DCEAPI.UnsupportMethodError{MethodName:"FetchTrade", ExchangeName:"AOFEX"}
+	return []DCEAPI.Trade{}, DCEAPI.UnsupportMethodError{MethodName: "FetchTrade", ExchangeName: "AOFEX"}
 }
 
 func (aofex *Aofex) FetchTrades(symbol, size string) ([]DCEAPI.Trade, error) {
 	url := "/openApi/market/trade"
 	type TradeResponse struct {
 		AofexBaseResponse
-		Result struct{
-			Data []struct{
-				Ts int `json:"ts"`
+		Result struct {
+			Data []struct {
+				Ts     int             `json:"ts"`
 				Amount decimal.Decimal `json:"amount"`
-				Price decimal.Decimal `json:"price"`
-				Side string `json:"direction"`
+				Price  decimal.Decimal `json:"price"`
+				Side   string          `json:"direction"`
 			} `json:"data"`
 		} `json:"result"`
 	}
 	trade := &TradeResponse{}
-	params := map[string]string{"symbol":aofex.symbolFormatConversion(symbol)}
+	params := map[string]string{"symbol": aofex.symbolFormatConversion(symbol)}
 	err := aofex.request("GET", aofex.SpotPath+url, params, nil, nil, trade)
 	trades := []DCEAPI.Trade{}
 	for _, v := range trade.Result.Data {
 		trade := DCEAPI.Trade{
 			Symbol: symbol,
 			Amount: v.Amount,
-			Price: v.Price,
-			Side: v.Side,
-			Ts: v.Ts,
+			Price:  v.Price,
+			Side:   v.Side,
+			Ts:     v.Ts,
 		}
 		trades = append(trades, trade)
 	}
@@ -123,15 +124,15 @@ func (aofex *Aofex) FetchOrderBook(symbol string, params map[string]string) (DCE
 	url := "/openApi/market/depth"
 	type DepthResponse struct {
 		AofexBaseResponse
-		Result struct{
-			Symbol string `json:"symbol"`
-			Ts int `json:"ts"`
-			Bids [][2]decimal.Decimal `json:"bids"`
-			Asks [][2]decimal.Decimal `json:"asks"`
+		Result struct {
+			Symbol string               `json:"symbol"`
+			Ts     int                  `json:"ts"`
+			Bids   [][2]decimal.Decimal `json:"bids"`
+			Asks   [][2]decimal.Decimal `json:"asks"`
 		} `json:"result"`
 	}
 	depthResponse := &DepthResponse{}
-	reqParams := map[string]string{"symbol":aofex.symbolFormatConversion(symbol)}
+	reqParams := map[string]string{"symbol": aofex.symbolFormatConversion(symbol)}
 	for k, v := range params {
 		reqParams[k] = v
 	}
@@ -147,31 +148,31 @@ func (aofex *Aofex) FetchOrderBook(symbol string, params map[string]string) (DCE
 func (aofex *Aofex) FetchOHLCV(symbol, period, size string) ([]DCEAPI.Kline, error) {
 	type OHLCVResponse struct {
 		AofexBaseResponse
-		Result struct{
-			Data []struct{
+		Result struct {
+			Data []struct {
 				Amount decimal.Decimal `json:"amount"`
-				Count decimal.Decimal `json:"count"`
-				Open decimal.Decimal `json:"open"`
-				Close decimal.Decimal `json:"close"`
-				Low decimal.Decimal `json:"low"`
-				High decimal.Decimal `json:"high"`
-				Vol decimal.Decimal `json:"vol"`
+				Count  decimal.Decimal `json:"count"`
+				Open   decimal.Decimal `json:"open"`
+				Close  decimal.Decimal `json:"close"`
+				Low    decimal.Decimal `json:"low"`
+				High   decimal.Decimal `json:"high"`
+				Vol    decimal.Decimal `json:"vol"`
 			} `json:"data"`
 		} `json:"result"`
 	}
 	klinesResponse := &OHLCVResponse{}
-	params := map[string]string{"symbol":aofex.symbolFormatConversion(symbol), "period":period, "size":size}
+	params := map[string]string{"symbol": aofex.symbolFormatConversion(symbol), "period": period, "size": size}
 	err := aofex.request("GET", aofex.SpotPath+"/openApi/market/kline", params, nil, nil, klinesResponse)
 	klines := []DCEAPI.Kline{}
-	for _, v := range klinesResponse.Result.Data{
+	for _, v := range klinesResponse.Result.Data {
 		klines = append(klines, DCEAPI.Kline{
 			Amount: v.Amount,
-			Count: v.Count,
-			Open: v.Open,
-			Close: v.Close,
-			Low: v.Low,
-			High: v.High,
-			Vol: v.Vol,
+			Count:  v.Count,
+			Open:   v.Open,
+			Close:  v.Close,
+			Low:    v.Low,
+			High:   v.High,
+			Vol:    v.Vol,
 		})
 	}
 	return klines, err
@@ -180,15 +181,15 @@ func (aofex *Aofex) FetchOHLCV(symbol, period, size string) ([]DCEAPI.Kline, err
 func (aofex *Aofex) FetchOHLCV24H(symbol string) (DCEAPI.Kline, error) {
 	type Kline24HResponse struct {
 		AofexBaseResponse
-		Result []struct{
-			Data struct{
+		Result []struct {
+			Data struct {
 				Amount decimal.Decimal `json:"amount"`
-				Count decimal.Decimal `json:"count"`
-				Open decimal.Decimal `json:"open"`
-				Close decimal.Decimal `json:"close"`
-				Low decimal.Decimal `json:"low"`
-				High decimal.Decimal `json:"high"`
-				Vol decimal.Decimal `json:"vol"`
+				Count  decimal.Decimal `json:"count"`
+				Open   decimal.Decimal `json:"open"`
+				Close  decimal.Decimal `json:"close"`
+				Low    decimal.Decimal `json:"low"`
+				High   decimal.Decimal `json:"high"`
+				Vol    decimal.Decimal `json:"vol"`
 			} `json:"data"`
 		} `json:"result"`
 	}
@@ -200,31 +201,31 @@ func (aofex *Aofex) FetchOHLCV24H(symbol string) (DCEAPI.Kline, error) {
 	}
 	kilne := DCEAPI.Kline{
 		Amount: kline24HResponse.Result[0].Data.Amount,
-		Count: kline24HResponse.Result[0].Data.Count,
-		Open: kline24HResponse.Result[0].Data.Open,
-		Close: kline24HResponse.Result[0].Data.Close,
-		Low: kline24HResponse.Result[0].Data.Low,
-		High: kline24HResponse.Result[0].Data.High,
-		Vol: kline24HResponse.Result[0].Data.Vol,
+		Count:  kline24HResponse.Result[0].Data.Count,
+		Open:   kline24HResponse.Result[0].Data.Open,
+		Close:  kline24HResponse.Result[0].Data.Close,
+		Low:    kline24HResponse.Result[0].Data.Low,
+		High:   kline24HResponse.Result[0].Data.High,
+		Vol:    kline24HResponse.Result[0].Data.Vol,
 	}
-	
-	return kilne, err 
+
+	return kilne, err
 }
 
 // 返回order
 func (aofex *Aofex) Order(side, symbol, amount, price string) (DCEAPI.Order, error) {
 	type OrderResponse struct {
 		AofexBaseResponse
-		Result struct{
+		Result struct {
 			OrderID string `json:"order_sn"`
 		} `json:"result"`
 	}
 	orderResponse := &OrderResponse{}
 	body := map[string]string{
 		"symbol": aofex.symbolFormatConversion(symbol),
-		"type": side,
+		"type":   side,
 		"amount": amount,
-		"price": price,
+		"price":  price,
 	}
 	headers := aofex.generateHeader(aofex.Exchange.ApiKey, aofex.Exchange.Secret, body)
 	err := aofex.request("POST", aofex.SpotPath+"/openApi/entrust/add", nil, body, headers, orderResponse)
@@ -250,14 +251,14 @@ func (aofex *Aofex) MarketBuyOrder(symbol, amount string) (DCEAPI.Order, error) 
 }
 
 // 使用order_sn来撤单
-func (aofex *Aofex) BatchCancelOrder(orderIDs ...string) ([]DCEAPI.Order, []DCEAPI.Order, error){
+func (aofex *Aofex) BatchCancelOrder(orderIDs ...string) ([]DCEAPI.Order, []DCEAPI.Order, error) {
 	var orderIDStr string
 	for i, orderID := range orderIDs {
 		orderIDStr += orderID
 		if i != len(orderIDs)-1 {
 			orderIDStr += ","
 		}
-	} 
+	}
 	body := map[string]string{
 		"order_ids": orderIDStr,
 	}
@@ -265,15 +266,15 @@ func (aofex *Aofex) BatchCancelOrder(orderIDs ...string) ([]DCEAPI.Order, []DCEA
 }
 
 // 单个order_id撤单
-func (aofex *Aofex) CancelOrder(OrderID string) (error) {
+func (aofex *Aofex) CancelOrder(OrderID string) error {
 	body := map[string]string{
 		"order_ids": OrderID,
 	}
 	type CancelOrderResponse struct {
 		AofexBaseResponse
-		Result struct{
+		Result struct {
 			Success []string `json:"success"`
-			Failed []string `json:"failed"`
+			Failed  []string `json:"failed"`
 		} `json:"result"`
 	}
 	cancelOrderResponse := &CancelOrderResponse{}
@@ -308,9 +309,9 @@ func (aofex *Aofex) CancelOrderBySymbol(symbols ...string) ([]DCEAPI.Order, []DC
 func (aofex *Aofex) cancelOrder(body map[string]string) ([]DCEAPI.Order, []DCEAPI.Order, error) {
 	type CancelOrderResponse struct {
 		AofexBaseResponse
-		Result struct{
+		Result struct {
 			Success []string `json:"success"`
-			Failed []string `json:"failed"`
+			Failed  []string `json:"failed"`
 		} `json:"result"`
 	}
 	cancelOrderResponse := &CancelOrderResponse{}
@@ -319,26 +320,26 @@ func (aofex *Aofex) cancelOrder(body map[string]string) ([]DCEAPI.Order, []DCEAP
 	successOrders := []DCEAPI.Order{}
 	failedOrders := []DCEAPI.Order{}
 	for _, successOrder := range cancelOrderResponse.Result.Success {
-		successOrders = append(successOrders, DCEAPI.Order{OrderID:successOrder,})
+		successOrders = append(successOrders, DCEAPI.Order{OrderID: successOrder})
 	}
 	for _, failedOrder := range cancelOrderResponse.Result.Failed {
-		failedOrders = append(failedOrders, DCEAPI.Order{OrderID:failedOrder,})
+		failedOrders = append(failedOrders, DCEAPI.Order{OrderID: failedOrder})
 	}
 	return successOrders, failedOrders, err
 }
 
-type aofexOrder struct{
-	OrderID string `json:"order_sn"`
-	Symbol string `json:"symbol"`
-	CreateTime string `json:"ctime"`
-	Type int `json:"type"`
-	Side string `json:"side"`
-	Price string `json:"price"`
-	Amount decimal.Decimal `json:"number"`
+type aofexOrder struct {
+	OrderID    string          `json:"order_sn"`
+	Symbol     string          `json:"symbol"`
+	CreateTime string          `json:"ctime"`
+	Type       int             `json:"type"`
+	Side       string          `json:"side"`
+	Price      string          `json:"price"`
+	Amount     decimal.Decimal `json:"number"`
 	TotalPrice decimal.Decimal `json:"total_price"`
 	DealAmount decimal.Decimal `json:"deal_number"`
-	DealPrice decimal.Decimal `json:"deal_price"`
-	Status int `json:"status"`
+	DealPrice  decimal.Decimal `json:"deal_price"`
+	Status     int             `json:"status"`
 }
 
 func (aofex *Aofex) FetchOpenOrders(symbol ...string) ([]DCEAPI.Order, error) {
@@ -349,7 +350,7 @@ func (aofex *Aofex) FetchOpenOrders(symbol ...string) ([]DCEAPI.Order, error) {
 	var params map[string]string
 	if len(symbol) >= 1 {
 		params = map[string]string{
-			"symbol":symbol[0],
+			"symbol": symbol[0],
 		}
 	}
 	openOrderResponse := &OpenOrderResponse{}
@@ -359,7 +360,7 @@ func (aofex *Aofex) FetchOpenOrders(symbol ...string) ([]DCEAPI.Order, error) {
 	for _, v := range openOrderResponse.Result {
 		openOrders = append(openOrders, *aofex.orderFormatConversionToDCEFormat(v))
 	}
-	return openOrders, err 
+	return openOrders, err
 }
 
 func (aofex *Aofex) FetchClosedOrders(symbol ...string) ([]DCEAPI.Order, error) {
@@ -380,7 +381,7 @@ func (aofex *Aofex) FetchClosedOrders(symbol ...string) ([]DCEAPI.Order, error) 
 	for _, v := range openOrderResponse.Result {
 		openOrders = append(openOrders, *aofex.orderFormatConversionToDCEFormat(v))
 	}
-	return openOrders, err 
+	return openOrders, err
 }
 
 func (aofex *Aofex) FetchOrder(OrderID string) (DCEAPI.Order, error) {
@@ -396,12 +397,12 @@ func (aofex *Aofex) FetchOrder(OrderID string) (DCEAPI.Order, error) {
 	err := aofex.request("GET", aofex.SpotPath+"/openApi/entrust/status", params, nil, headers, orderResponse)
 	order := aofex.orderFormatConversionToDCEFormat(orderResponse.Result)
 	if orderResponse.Result.OrderID == "" {
-		return *order, DCEAPI.OrderNotFound{ErrMsg:fmt.Sprintf("invalid order id %s", OrderID)}
+		return *order, DCEAPI.OrderNotFound{ErrMsg: fmt.Sprintf("invalid order id %s", OrderID)}
 	}
 	return *order, err
 }
 
-func (aofex Aofex) orderFormatConversionToDCEFormat(aorder aofexOrder) (*DCEAPI.Order){
+func (aofex Aofex) orderFormatConversionToDCEFormat(aorder aofexOrder) *DCEAPI.Order {
 	var orderType, status string
 	var dealAmountQuote decimal.Decimal
 	var dealAmountBase decimal.Decimal
@@ -409,7 +410,7 @@ func (aofex Aofex) orderFormatConversionToDCEFormat(aorder aofexOrder) (*DCEAPI.
 	switch aorder.Type {
 	case 1:
 		orderType = "market"
-	case 2: 
+	case 2:
 		orderType = "limit"
 	}
 	switch aorder.Status {
@@ -428,18 +429,18 @@ func (aofex Aofex) orderFormatConversionToDCEFormat(aorder aofexOrder) (*DCEAPI.
 	}
 	price, _ := decimal.NewFromString(aorder.Price)
 	order := DCEAPI.Order{
-		OrderID: aorder.OrderID,
-		Symbol: aofex.symbolFormatConversionToDCEFormat(aorder.Symbol),
-		CreateTime: dateTimeToTimeStamp(aorder.CreateTime),
-		Type: orderType,
-		Side: aorder.Side,
-		Price: price,
-		Amount: aorder.Amount,
-		DealPrice: aorder.DealPrice,
-		TotalPrice: aorder.TotalPrice,
+		OrderID:         aorder.OrderID,
+		Symbol:          aofex.symbolFormatConversionToDCEFormat(aorder.Symbol),
+		CreateTime:      dateTimeToTimeStamp(aorder.CreateTime),
+		Type:            orderType,
+		Side:            aorder.Side,
+		Price:           price,
+		Amount:          aorder.Amount,
+		DealPrice:       aorder.DealPrice,
+		TotalPrice:      aorder.TotalPrice,
 		DealAmountQuote: dealAmountQuote,
-		DealAmountBase: dealAmountBase,
-		Status: status,
+		DealAmountBase:  dealAmountBase,
+		Status:          status,
 	}
 	return &order
 }

@@ -2,13 +2,13 @@ package exchanges
 
 import (
 	"crypto/sha1"
-	"math/rand" 
+	"encoding/json"
 	"fmt"
+	"io"
+	"math/rand"
+	"net/url"
 	"sort"
 	"strconv"
-	"net/url"
-	"io"
-	"encoding/json"
 	"strings"
 	"time"
 
@@ -16,26 +16,26 @@ import (
 )
 
 const (
-	PATH string = "https://aofex.com/"
-	CNPATH string = "https://aofex.co/"
+	PATH     string = "https://aofex.com/"
+	CNPATH   string = "https://aofex.co/"
 	SPOTPATH string = "https://openapi.aofex.co"
 	SWAPPATH string = "https://openapi-contract.aofex.co"
 )
 
 type Aofex struct {
-	Path string
+	Path     string
 	SpotPath string
 	SwapPath string
 	Exchange *DCEAPI.Exchange
-}		
+}
 
 func NewAofex(secret, apiKey string) *Aofex {
 	aofex := &Aofex{
-		Path: PATH,
+		Path:     PATH,
 		SpotPath: SPOTPATH,
 		SwapPath: SWAPPATH,
 		Exchange: &DCEAPI.Exchange{
-			Name: "AOFEX",
+			Name:   "AOFEX",
 			Secret: secret,
 			ApiKey: apiKey,
 		},
@@ -54,9 +54,9 @@ func (aofex *Aofex) sign(apikey, secret, nonce string, data map[string]string) s
 	for _, v := range tmp {
 		hashString += v
 	}
-	t := sha1.New();
-	io.WriteString(t, hashString);
-	return fmt.Sprintf("%x",t.Sum(nil));
+	t := sha1.New()
+	io.WriteString(t, hashString)
+	return fmt.Sprintf("%x", t.Sum(nil))
 }
 
 // 生成随机字符串
@@ -64,8 +64,8 @@ func (aofex *Aofex) getRandomStr() string {
 	rand.Seed(time.Now().UnixNano())
 	str := "abcdefghijklmnopqrstuvwxyz"
 	var randStr string
-	for i:=0;i<4;i++ {
-		randInt := rand.Intn(len(str)-1)
+	for i := 0; i < 4; i++ {
+		randInt := rand.Intn(len(str) - 1)
 		randStr += string(str[randInt])
 	}
 	return randStr + strconv.Itoa(rand.Intn(9))
@@ -73,7 +73,7 @@ func (aofex *Aofex) getRandomStr() string {
 
 // 时间戳+随机字符串
 func (aofex *Aofex) generateNonce() string {
-	ts := strconv.FormatInt(time.Now().Unix(),10)
+	ts := strconv.FormatInt(time.Now().Unix(), 10)
 	return ts + "_" + aofex.getRandomStr()
 }
 
@@ -81,8 +81,8 @@ func (aofex *Aofex) generateNonce() string {
 func (aofex *Aofex) generateHeader(apikey, secret string, params map[string]string) map[string]string {
 	nonce := aofex.generateNonce()
 	return map[string]string{
-		"Nonce": nonce,
-		"Token": apikey,
+		"Nonce":     nonce,
+		"Token":     apikey,
 		"Signature": aofex.sign(apikey, secret, nonce, params),
 	}
 }
@@ -92,7 +92,7 @@ func (aofex *Aofex) GetExchangeName() string {
 }
 
 type AofexBaseResponse struct {
-	Errno int `json:"errno"`
+	Errno  int    `json:"errno"`
 	ErrMsg string `json:"errmsg"`
 }
 
@@ -103,27 +103,27 @@ type aofexResponse interface {
 func (baseResponse *AofexBaseResponse) hasError() error {
 	var err error
 	switch baseResponse.Errno {
-		case 0:
-			err = nil
-		case 20504:
-			err = &DCEAPI.BalanceError{ErrCode:20504, ErrMsg:baseResponse.ErrMsg}
-		case 20501, 20502:
-			err = &DCEAPI.SymbolError{ErrCode:20501, ErrMsg:baseResponse.ErrMsg}
-		case 20506, 20522, 20521:
-			err = &DCEAPI.InvalidSignatureError{ErrCode:baseResponse.Errno, ErrMsg:baseResponse.ErrMsg}
-		case 20510, 20511, 20512, 20513, 20514:
-			err = &DCEAPI.OrderLimitError{ErrCode:baseResponse.Errno, ErrMsg:baseResponse.ErrMsg}
-		case 20515:
-			err = &DCEAPI.OrderNotFound{ErrCode:20515, ErrMsg:baseResponse.ErrMsg}
-		case 20516:
-			err = &DCEAPI.OrderStateError{ErrCode:20516, ErrMsg:baseResponse.ErrMsg}
-		default:
-			err = &DCEAPI.ExchangeError{ErrCode:baseResponse.Errno, ErrMsg:baseResponse.ErrMsg}
+	case 0:
+		err = nil
+	case 20504:
+		err = &DCEAPI.BalanceError{ErrCode: 20504, ErrMsg: baseResponse.ErrMsg}
+	case 20501, 20502:
+		err = &DCEAPI.SymbolError{ErrCode: 20501, ErrMsg: baseResponse.ErrMsg}
+	case 20506, 20522, 20521:
+		err = &DCEAPI.InvalidSignatureError{ErrCode: baseResponse.Errno, ErrMsg: baseResponse.ErrMsg}
+	case 20510, 20511, 20512, 20513, 20514:
+		err = &DCEAPI.OrderLimitError{ErrCode: baseResponse.Errno, ErrMsg: baseResponse.ErrMsg}
+	case 20515:
+		err = &DCEAPI.OrderNotFound{ErrCode: 20515, ErrMsg: baseResponse.ErrMsg}
+	case 20516:
+		err = &DCEAPI.OrderStateError{ErrCode: 20516, ErrMsg: baseResponse.ErrMsg}
+	default:
+		err = &DCEAPI.ExchangeError{ErrCode: baseResponse.Errno, ErrMsg: baseResponse.ErrMsg}
 	}
 	return err
 }
 
-func (aofex *Aofex) buildRequestBody (body map[string]string) (string, error) {
+func (aofex *Aofex) buildRequestBody(body map[string]string) (string, error) {
 	formData := url.Values{}
 	for k, v := range body {
 		formData.Add(k, v)
@@ -145,7 +145,7 @@ func (aofex *Aofex) request(method, path string, params, body, headers map[strin
 	if err != nil {
 		return err
 	}
-	
+
 	err = json.Unmarshal(res, model)
 	if err != nil {
 		return err
@@ -163,4 +163,3 @@ func (aofex Aofex) symbolFormatConversion(symbol string) string {
 func (aofex Aofex) symbolFormatConversionToDCEFormat(symbol string) string {
 	return strings.Replace(symbol, "-", "/", -1)
 }
-

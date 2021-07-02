@@ -18,7 +18,7 @@ type SpotAPI interface {
 	MarketSellOrder(symbol, amount string) (Order, error)
 	MarketBuyOrder(symbol, amount string) (Order, error)
 	FetchOrder(OrderID string) (Order, error)
-	CancelOrder(orderID string) (error)
+	CancelOrder(orderID string) error
 	BatchCancelOrder(orderID ...string) ([]Order, []Order, error)
 	CancelOrderBySymbol(symbols ...string) ([]Order, []Order, error)
 	FetchOpenOrders(symbols ...string) ([]Order, error)
@@ -28,6 +28,3 @@ type SpotAPI interface {
 type SwapAPI interface {
 	GetExchangeName() string
 }
-
-
-

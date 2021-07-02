@@ -1,23 +1,23 @@
 package DCEAPI
 
 import (
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
-	"io/ioutil"
 	"time"
 )
 
 type Exchange struct {
-	Name string
-	ApiKey string
-	Secret string
-	Password string
+	Name      string
+	ApiKey    string
+	Secret    string
+	Password  string
 	LimitRate bool
-	Debug bool
+	Debug     bool
 }
 
-func BuildRequestUrl(path string, params map[string]string) (string) {
+func BuildRequestUrl(path string, params map[string]string) string {
 	value := url.Values{}
 	for k, v := range params {
 		value.Add(k, v)
@@ -27,7 +27,6 @@ func BuildRequestUrl(path string, params map[string]string) (string) {
 	}
 	return path + value.Encode()
 }
-
 
 // 封装基础请求, url已经通过参数builder
 func HttpRequest(method, path, body string, headers map[string]string) ([]byte, error) {
@@ -54,7 +53,7 @@ func HttpRequest(method, path, body string, headers map[string]string) ([]byte, 
 	if err != nil {
 		return nil, err
 	}
-	
+
 	if resp.StatusCode != 200 {
 		return nil, HttpError{resp.StatusCode, string(resBody)}
 	}

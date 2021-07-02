@@ -6,7 +6,7 @@ import (
 
 type BaseError struct {
 	ErrCode int
-	ErrMsg string
+	ErrMsg  string
 }
 
 // 认证错误
@@ -16,10 +16,10 @@ type InvalidSignatureError BaseError
 type SymbolError BaseError
 
 // 余额不足
-type BalanceError BaseError 
+type BalanceError BaseError
 
 // 未知订单
-type OrderNotFound BaseError 
+type OrderNotFound BaseError
 
 // 交易所错误
 type ExchangeError BaseError
@@ -59,7 +59,7 @@ func (exErr OrderStateError) Error() string {
 }
 
 type UnsupportMethodError struct {
-	MethodName string
+	MethodName   string
 	ExchangeName string
 }
 
@@ -70,7 +70,7 @@ func (err UnsupportMethodError) Error() string {
 // http状态码!=200时候抛出
 type HttpError struct {
 	HttpCode int
-	HttpMsg string
+	HttpMsg  string
 }
 
 func (err HttpError) Error() string {

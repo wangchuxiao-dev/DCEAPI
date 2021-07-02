@@ -3,13 +3,13 @@ package exchanges
 import (
 	"github.com/PythonohtyP1900/DCEAPI"
 
-	"encoding/json"
-	"strings"
-	"net/url"
-	"time"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/json"
+	"net/url"
+	"strings"
+	"time"
 )
 
 const (
@@ -21,10 +21,10 @@ var (
 )
 
 type Huobi struct {
-	Path string
+	Path     string
 	SpotPath string
 	SwapPath string
-	SpotID int
+	SpotID   int
 	Exchange *DCEAPI.Exchange
 }
 
@@ -32,7 +32,7 @@ func NewHuobi(secret, apiKey string) *Huobi {
 	huobi := &Huobi{
 		Path: HUOBI_PATH,
 		Exchange: &DCEAPI.Exchange{
-			Name: "HUOBI",
+			Name:   "HUOBI",
 			ApiKey: apiKey,
 			Secret: secret,
 		},
@@ -47,16 +47,16 @@ func NewHuobi(secret, apiKey string) *Huobi {
 }
 
 type huobiBaseResponse struct {
-	Ts int `json:"ts"`
-	Status string `json:"status"`
+	Ts      int    `json:"ts"`
+	Status  string `json:"status"`
 	ErrCode string `json:"err-code"`
-	ErrMsg string `json:"err-msg"`
+	ErrMsg  string `json:"err-msg"`
 }
 
 func (baseResponse huobiBaseResponse) hasError() error {
 	var err error
 	if baseResponse.Status != "ok" {
-		err = &DCEAPI.ExchangeError{ErrMsg:baseResponse.ErrCode, ErrCode:500}
+		err = &DCEAPI.ExchangeError{ErrMsg: baseResponse.ErrCode, ErrCode: 500}
 	}
 	return err
 }
@@ -64,7 +64,6 @@ func (baseResponse huobiBaseResponse) hasError() error {
 type huobiResponse interface {
 	hasError() error
 }
-
 
 func (huobi *Huobi) sign(host, method, path, secret string, params map[string]string) string {
 	var sb strings.Builder
@@ -88,10 +87,10 @@ func (huobi *Huobi) sign(host, method, path, secret string, params map[string]st
 
 func (huobi *Huobi) generateSignature(host, method, path, secret, apiKey string, params map[string]string) map[string]string {
 	signMap := map[string]string{
-		"AccessKeyId": apiKey,
-		"SignatureMethod": "HmacSHA256",
+		"AccessKeyId":      apiKey,
+		"SignatureMethod":  "HmacSHA256",
 		"SignatureVersion": "2",
-		"Timestamp": time.Now().UTC().Format("2006-01-02T15:04:05"),
+		"Timestamp":        time.Now().UTC().Format("2006-01-02T15:04:05"),
 	}
 	for k, v := range params {
 		signMap[k] = v
@@ -120,7 +119,7 @@ func (huobi Huobi) request(method, path string, params map[string]string, body m
 	if err != nil {
 		return err
 	}
-	
+
 	err = json.Unmarshal(res, model)
 	if err != nil {
 		return err
@@ -133,9 +132,9 @@ func (huobi Huobi) GetAccount() (map[string]int, error) {
 	url := "/v1/account/accounts"
 	type AccountResponse struct {
 		huobiBaseResponse
-		Data []struct{
-			Id int `json:"id"`
-			Type string `json:"type"` 
+		Data []struct {
+			Id   int    `json:"id"`
+			Type string `json:"type"`
 		} `json:"data"`
 	}
 	accountResponse := &AccountResponse{}
@@ -146,7 +145,7 @@ func (huobi Huobi) GetAccount() (map[string]int, error) {
 		account["spot"] = v.Id
 	}
 	return account, err
-} 
+}
 
 func (huobi Huobi) symbolFormatConversion(symbol string) string {
 	temp := strings.Split(strings.ToLower(symbol), "/")
@@ -155,17 +154,17 @@ func (huobi Huobi) symbolFormatConversion(symbol string) string {
 }
 
 func (huobi Huobi) symbolFormatConversionToDCEFormat(symbol string) string {
-	reverseString := func(s string) string{
+	reverseString := func(s string) string {
 		var result string
-		for i:=len(s)-1; i>=0; i-- {
+		for i := len(s) - 1; i >= 0; i-- {
 			result += string(s[i])
 		}
 		return result
 	}
 	var base, temp, quote string
-	for i:=len(symbol)-1; i>=0; i-- {
+	for i := len(symbol) - 1; i >= 0; i-- {
 		temp += string(symbol[i])
-		for _, j := range BASE_CURRENCIES{
+		for _, j := range BASE_CURRENCIES {
 			if reverseString(temp) == j {
 				base = j
 				quote = symbol[0:i]
@@ -175,4 +174,3 @@ func (huobi Huobi) symbolFormatConversionToDCEFormat(symbol string) string {
 	symbol = strings.ToUpper(quote) + "/" + strings.ToUpper(base)
 	return symbol
 }
-
