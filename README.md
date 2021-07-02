@@ -3,6 +3,9 @@
 支持交易所：BINANCE HUOBIPRO AOFEX
 切换交易所毋需更改任何代码
 
+# 安装
+go get github.com/PythonohtyP1900/DCEAPI
+
 # 代码实例
 
 ```
