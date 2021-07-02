@@ -1,14 +1,14 @@
 package main
 
 import (
-	"github.com/PythonohtyP1900/DCEAPI/exchanges"
 	"github.com/PythonohtyP1900/DCEAPI"
+	"github.com/PythonohtyP1900/DCEAPI/exchanges"
 	"github.com/shopspring/decimal"
 
 	"fmt"
 )
 
-func initExchange(exchangeName string) (DCEAPI.SpotAPI) {
+func initExchange(exchangeName string) DCEAPI.SpotAPI {
 	var apiKey string
 	var secret string
 	switch exchangeName {
@@ -42,7 +42,7 @@ func main() {
 	markets, err := api.FetchMarkets()
 	fmt.Println(markets, err)
 
-	orderBook, err := api.FetchOrderBook("BTC/USDT", map[string]string{"type":"step0"})
+	orderBook, err := api.FetchOrderBook("BTC/USDT", map[string]string{"type": "step0"})
 	fmt.Println(orderBook, err)
 
 	kline, err := api.FetchOHLCV("BTC/USDT", "1min", "200")
